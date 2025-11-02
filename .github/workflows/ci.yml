@@ -50,6 +50,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-zig-
 
+      - name: Setup just
+        uses: extractions/setup-just@v2
+
       - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
