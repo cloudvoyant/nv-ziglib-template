@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.4.0...v1.5.0) (2025-11-02)
+
+### Features
+
+* add multi-platform binary distribution and library support ([cae12ff](https://github.com/cloudvoyant/nv-ziglib-template/commit/cae12ffd6537d1c00559b4ae12a2eee6a3249df4))
+
 ## [1.4.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.3.0...v1.4.0) (2025-11-02)
 
 ### Features
