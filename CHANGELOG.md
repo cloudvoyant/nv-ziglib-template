@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.0.0...v1.1.0) (2025-11-02)
+
+### Features
+
+* add run-prod command and improve publishing ([5cbba1b](https://github.com/cloudvoyant/nv-ziglib-template/commit/5cbba1b2a331770538b444db57d70a7ff95019fe))
+
 ## 1.0.0 (2025-11-02)
 
 ### Features
