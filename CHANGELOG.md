@@ -1,3 +1,9 @@
+## 1.0.0 (2025-11-02)
+
+### Features
+
+* adapt template for Zig with build system and CI/CD ([4cb2bb0](https://github.com/cloudvoyant/nv-ziglib-template/commit/4cb2bb0ec5c08f609b279bab0089970941a2eb28))
+
 ## [1.13.0](https://github.com/cloudvoyant/nv-lib-template/compare/v1.12.0...v1.13.0) (2025-11-02)
 
 ### Features
