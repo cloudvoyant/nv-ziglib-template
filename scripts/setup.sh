@@ -16,6 +16,7 @@ Required dependencies (always installed):
 - bash (shell)
 - just (command runner)
 - direnv (environment management)
+- zig (Zig programming language)
 
 Development tools (--dev):
 - docker (containerization)
@@ -71,7 +72,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --template    Install template development tools"
             echo "  -h, --help    Show this help message"
             echo ""
-            echo "Required: bash, just, direnv"
+            echo "Required: bash, just, direnv, zig"
             echo "Development (--dev): docker, node/npx, gcloud, shellcheck, shfmt, claude"
             echo "CI (--ci): docker, node/npx, gcloud"
             echo "Template (--template): bats-core"
@@ -259,6 +260,75 @@ install_direnv() {
 
     log_success "direnv installation completed"
     log_info "Please add 'eval \"\$(direnv hook bash)\"' to your ~/.bashrc or shell config"
+}
+
+# Install Zig based on platform
+install_zig() {
+    log_info "Installing Zig..."
+
+    case $PLATFORM in
+    Mac)
+        if command_exists brew; then
+            brew install zig
+        else
+            log_warn "Homebrew not found. Installing Zig from binary..."
+            local arch=$(uname -m)
+            if [ "$arch" = "arm64" ]; then
+                arch="aarch64"
+            fi
+            curl -L "https://ziglang.org/download/0.13.0/zig-macos-${arch}-0.13.0.tar.xz" -o /tmp/zig.tar.xz
+            tar -xf /tmp/zig.tar.xz -C /tmp
+            sudo mkdir -p /usr/local/zig
+            sudo mv /tmp/zig-macos-${arch}-0.13.0/* /usr/local/zig/
+            sudo ln -sf /usr/local/zig/zig /usr/local/bin/zig
+            rm -rf /tmp/zig.tar.xz /tmp/zig-macos-${arch}-0.13.0
+        fi
+        ;;
+    Linux)
+        # Check if Zig is available in package manager
+        if command_exists apt-get; then
+            # apt version might be old, but try it first
+            local apt_version=$(apt-cache policy zig 2>/dev/null | grep Candidate | awk '{print $2}')
+            if [ -n "$apt_version" ] && [ "$apt_version" != "(none)" ]; then
+                log_info "Installing Zig from apt (version: $apt_version)..."
+                sudo apt-get install -y zig
+            else
+                log_info "Installing Zig from binary (apt version too old or unavailable)..."
+                install_zig_from_binary
+            fi
+        elif command_exists pacman; then
+            sudo pacman -S zig
+        elif command_exists apk; then
+            sudo apk add --no-cache zig
+        else
+            log_info "Installing Zig from binary..."
+            install_zig_from_binary
+        fi
+        ;;
+    *)
+        log_warn "Unsupported platform for automatic Zig installation. Please install Zig manually from https://ziglang.org/download/"
+        return 1
+        ;;
+    esac
+
+    log_success "Zig installation completed"
+}
+
+# Install Zig from official binary release (Linux helper)
+install_zig_from_binary() {
+    local arch=$(uname -m)
+    if [ "$arch" = "aarch64" ]; then
+        arch="aarch64"
+    else
+        arch="x86_64"
+    fi
+
+    curl -L "https://ziglang.org/download/0.13.0/zig-linux-${arch}-0.13.0.tar.xz" -o /tmp/zig.tar.xz
+    tar -xf /tmp/zig.tar.xz -C /tmp
+    sudo mkdir -p /usr/local/zig
+    sudo mv /tmp/zig-linux-${arch}-0.13.0/* /usr/local/zig/
+    sudo ln -sf /usr/local/zig/zig /usr/local/bin/zig
+    rm -rf /tmp/zig.tar.xz /tmp/zig-linux-${arch}-0.13.0
 }
 
 # Install Node.js and npx based on platform
@@ -490,7 +560,7 @@ install_claude() {
 # Check and install dependencies
 check_dependencies() {
     log_info "Checking dependencies..."
-    log_info "Required: bash, just, direnv"
+    log_info "Required: bash, just, direnv, zig"
 
     if [ "$INSTALL_DEV" = true ]; then
         log_info "Development tools: docker, node/npx, gcloud, shellcheck, shfmt, claude (will be installed)"
@@ -517,7 +587,7 @@ check_dependencies() {
         fi
     fi
 
-    local total=9
+    local total=10
     local current=0
     local failed_required=0
 
@@ -564,6 +634,21 @@ check_dependencies() {
             log_success "direnv installed successfully"
         else
             log_error "Failed to install direnv - visit https://direnv.net to install manually and re-run setup"
+            failed_required=1
+        fi
+    fi
+
+    # Check Zig (REQUIRED)
+    current=$((current + 1))
+    progress_step $current $total "Checking Zig (required)..."
+    if command_exists zig; then
+        log_success "Zig is already installed: $(zig version)"
+    else
+        log_warn "Zig not found"
+        if install_zig; then
+            log_success "Zig installed successfully: $(zig version)"
+        else
+            log_error "Failed to install Zig - visit https://ziglang.org/download/ to install manually and re-run setup"
             failed_required=1
         fi
     fi

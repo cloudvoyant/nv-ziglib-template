@@ -1,9 +1,9 @@
-# nv-lib-template
+# nv-ziglib-template
 
-![Version](https://img.shields.io/github/v/release/cloudvoyant/nv-lib-template?label=version)
-![Release](https://github.com/cloudvoyant/nv-lib-template/workflows/Release/badge.svg)
+![Version](https://img.shields.io/github/v/release/cloudvoyant/nv-ziglib-template?label=version)
+![Release](https://github.com/cloudvoyant/nv-ziglib-template/workflows/Release/badge.svg)
 
-`nv-lib-template` is a language-agnostic template for building projects with automated versioning, testing, and GitHub Action powered CI/CD workflows. It uses GCP Artifact Registry for publishing generic packages by default, but can be easily adapted for npm, PyPI, NuGet, CodeArtifact, etc.
+`nv-ziglib-template` is a language-agnostic template for building projects with automated versioning, testing, and GitHub Action powered CI/CD workflows. It uses GCP Artifact Registry for publishing generic packages by default, but can be easily adapted for npm, PyPI, NuGet, CodeArtifact, etc.
 
 ## Features
 
@@ -32,7 +32,7 @@ Scaffold a new project:
 
 ```bash
 # Option 1: Nedavellir CLI (automated)
-nv create your-project-name --platform nv-lib-template
+nv create your-project-name --platform nv-ziglib-template
 
 # Option 2: GitHub template + scaffold script
 # Click "Use this template" on GitHub, then:

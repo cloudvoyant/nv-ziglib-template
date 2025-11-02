@@ -1,6 +1,6 @@
 # User Guide
 
-`nv-lib-template` is a language-agnostic template for building projects with automated versioning, testing, and GitHub Action powered CI/CD workflows. It uses GCP Artifact Registry for publishing generic packages by default, but can be easily adapted for npm, PyPI, NuGet, CodeArtifact, etc.
+`nv-ziglib-template` is a language-agnostic template for building projects with automated versioning, testing, and GitHub Action powered CI/CD workflows. It uses GCP Artifact Registry for publishing generic packages by default, but can be easily adapted for npm, PyPI, NuGet, CodeArtifact, etc.
 
 ## Features
 
@@ -31,7 +31,7 @@ Scaffold a new project:
 
 ```bash
 # Option 1: Nedavellir CLI (automated)
-nv create your-project-name --template nv-lib-template
+nv create your-project-name --template nv-ziglib-template
 
 # Option 2: GitHub template + scaffold script
 # Click "Use this template" on GitHub, then:

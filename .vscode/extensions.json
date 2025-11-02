@@ -5,6 +5,7 @@
     "skellock.just",
     "nefrob.vscode-just-syntax",
     "timonwong.shellcheck",
-    "foxundermoon.shell-format"
+    "foxundermoon.shell-format",
+    "ziglang.vscode-zig"
   ]
 }

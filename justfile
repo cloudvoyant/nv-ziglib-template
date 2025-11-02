@@ -37,28 +37,33 @@ load:
 # Install dependencies
 [group('dev')]
 install:
-    @echo -e "{{WARN}}TODO: Implement install{{NORMAL}}"
+    @echo -e "{{INFO}}Fetching Zig dependencies from build.zig.zon...{{NORMAL}}"
+    @zig build --fetch
 
 # Build the project
 [group('dev')]
 build:
-    @echo -e "{{WARN}}TODO: Implement build for $_PROJECT@$VERSION{{NORMAL}}"
+    @echo -e "{{INFO}}Building $_PROJECT@$VERSION...{{NORMAL}}"
+    @zig build
 
 # Run project locally
 [group('dev')]
 run: build
-    @echo -e "{{WARN}}TODO: Implement run{{NORMAL}}"
+    @echo -e "{{INFO}}Running example...{{NORMAL}}"
+    @zig build run
 
 # Run tests
 [group('dev')]
-test: build
-    @echo -e "{{WARN}}TODO: Implement test{{NORMAL}}"
+test:
+    @echo -e "{{INFO}}Running tests...{{NORMAL}}"
+    @zig build test --summary all
 
 # Clean build artifacts
 [group('dev')]
 clean:
-    @rm -rf .nv
-    @echo -e "{{WARN}}TODO: Implement clean{{NORMAL}}"
+    @echo -e "{{INFO}}Cleaning build artifacts...{{NORMAL}}"
+    @rm -rf .zig-cache/ zig-out/ .nv/
+    @echo -e "{{SUCCESS}}Clean complete{{NORMAL}}"
 
 # ==============================================================================
 # DOCKER
@@ -88,22 +93,30 @@ setup *ARGS:
 # Format code
 [group('utils')]
 format *PATHS:
-    @echo -e "{{WARN}}TODO: Implement formatting{{NORMAL}}"
+    @echo -e "{{INFO}}Formatting Zig code...{{NORMAL}}"
+    @zig fmt src/ build.zig {{PATHS}}
+    @echo -e "{{SUCCESS}}Formatting complete{{NORMAL}}"
 
 # Check code formatting (CI mode)
 [group('utils')]
 format-check *PATHS:
-    @echo -e "{{WARN}}TODO: Implement format checking{{NORMAL}}"
+    @echo -e "{{INFO}}Checking Zig code formatting...{{NORMAL}}"
+    @zig fmt --check src/ build.zig {{PATHS}}
+    @echo -e "{{SUCCESS}}Format check passed{{NORMAL}}"
 
 # Lint code
 [group('utils')]
 lint *PATHS:
-    @echo -e "{{WARN}}TODO: Implement linting{{NORMAL}}"
+    @echo -e "{{INFO}}Linting Zig code (building with full warnings)...{{NORMAL}}"
+    @zig build
+    @echo -e "{{SUCCESS}}Lint check passed{{NORMAL}}"
 
 # Lint and auto-fix issues
 [group('utils')]
 lint-fix *PATHS:
-    @echo -e "{{WARN}}TODO: Implement lint auto-fixing{{NORMAL}}"
+    @echo -e "{{INFO}}Auto-fixing Zig code (formatting)...{{NORMAL}}"
+    @zig fmt src/ build.zig {{PATHS}}
+    @echo -e "{{SUCCESS}}Auto-fix complete{{NORMAL}}"
 
 # Upgrade to newer template version (requires Claude Code)
 [group('utils')]
@@ -150,9 +163,11 @@ registry-login *ARGS:
 # Build for production
 [group('ci')]
 build-prod:
+    @echo -e "{{INFO}}Building production artifacts for $_PROJECT@$VERSION...{{NORMAL}}"
     @mkdir -p dist
-    @echo "$PROJECT $VERSION - Replace with your build artifact" > dist/artifact.txt
-    @echo -e "{{SUCCESS}}Production artifact created: dist/artifact.txt{{NORMAL}}"
+    @zig build -Doptimize=ReleaseFast
+    @cp -r zig-out/* dist/
+    @echo -e "{{SUCCESS}}Production artifacts created in dist/{{NORMAL}}"
 
 # Get current version
 [group('ci')]
