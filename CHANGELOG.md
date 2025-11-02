@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.2.0...v1.3.0) (2025-11-02)
+
+### Features
+
+* optimize Docker build performance ([5315fe6](https://github.com/cloudvoyant/nv-ziglib-template/commit/5315fe6364032186a7212336ca1943c16dc99dd9))
+
 ## [1.2.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.1.0...v1.2.0) (2025-11-02)
 
 ### Features
