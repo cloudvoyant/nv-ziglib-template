@@ -24,7 +24,7 @@ pub fn build(b: *std.Build) void {
 
     // Example executable
     const exe = b.addExecutable(.{
-        .name = "example",
+        .name = "nv-ziglib-template",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,

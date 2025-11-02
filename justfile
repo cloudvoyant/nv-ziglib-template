@@ -169,6 +169,12 @@ build-prod:
     @cp -r zig-out/* dist/
     @echo -e "{{SUCCESS}}Production artifacts created in dist/{{NORMAL}}"
 
+# Run production binary
+[group('ci')]
+run-prod *ARGS: build-prod
+    @echo -e "{{INFO}}Running production binary...{{NORMAL}}"
+    @./dist/bin/$_PROJECT {{ARGS}}
+
 # Get current version
 [group('ci')]
 version:
@@ -196,14 +202,19 @@ publish: test build-prod
     fi
 
     echo -e "{{INFO}}Publishing package $PROJECT@$VERSION...{{NORMAL}}"
+
+    # Create tarball of binaries for GCP Artifact Registry
+    tar -czf $PROJECT-$VERSION.tar.gz -C dist .
+
     gcloud artifacts generic upload \
         --project=$GCP_REGISTRY_PROJECT_ID \
         --location=$GCP_REGISTRY_REGION \
         --repository=$GCP_REGISTRY_NAME \
         --package=$PROJECT \
         --version=$VERSION \
-        --source=dist/artifact.txt
-    echo -e "{{SUCCESS}}Published.{{NORMAL}}"
+        --source=$PROJECT-$VERSION.tar.gz
+
+    echo -e "{{SUCCESS}}Published $PROJECT@$VERSION{{NORMAL}}"
 
 # ==============================================================================
 # TEMPLATE
