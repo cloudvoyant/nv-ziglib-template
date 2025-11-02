@@ -16,6 +16,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cache binaries
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin
+          key: ${{ runner.os }}-bin-${{ hashFiles('scripts/setup.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-bin-
+
       - name: Cache apt packages
         uses: actions/cache@v4
         with:

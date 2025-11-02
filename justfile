@@ -164,16 +164,14 @@ registry-login *ARGS:
 [group('ci')]
 build-prod:
     @echo -e "{{INFO}}Building production artifacts for $_PROJECT@$VERSION...{{NORMAL}}"
-    @mkdir -p dist
     @zig build -Doptimize=ReleaseFast
-    @cp -r zig-out/* dist/
-    @echo -e "{{SUCCESS}}Production artifacts created in dist/{{NORMAL}}"
+    @echo -e "{{SUCCESS}}Production build complete in zig-out/{{NORMAL}}"
 
 # Run production binary
 [group('ci')]
 run-prod *ARGS: build-prod
     @echo -e "{{INFO}}Running production binary...{{NORMAL}}"
-    @./dist/bin/$_PROJECT {{ARGS}}
+    @./zig-out/bin/$_PROJECT {{ARGS}}
 
 # Get current version
 [group('ci')]
@@ -204,7 +202,7 @@ publish: test build-prod
     echo -e "{{INFO}}Publishing package $PROJECT@$VERSION...{{NORMAL}}"
 
     # Create tarball of binaries for GCP Artifact Registry
-    tar -czf $PROJECT-$VERSION.tar.gz -C dist .
+    tar -czf $PROJECT-$VERSION.tar.gz -C zig-out .
 
     gcloud artifacts generic upload \
         --project=$GCP_REGISTRY_PROJECT_ID \
