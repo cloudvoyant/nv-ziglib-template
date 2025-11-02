@@ -276,12 +276,12 @@ install_zig() {
             if [ "$arch" = "arm64" ]; then
                 arch="aarch64"
             fi
-            curl -L "https://ziglang.org/download/0.13.0/zig-macos-${arch}-0.13.0.tar.xz" -o /tmp/zig.tar.xz
+            curl -L "https://ziglang.org/download/0.15.1/zig-${arch}-macos-0.15.1.tar.xz" -o /tmp/zig.tar.xz
             tar -xf /tmp/zig.tar.xz -C /tmp
             sudo mkdir -p /usr/local/zig
-            sudo mv /tmp/zig-macos-${arch}-0.13.0/* /usr/local/zig/
+            sudo mv /tmp/zig-${arch}-macos-0.15.1/* /usr/local/zig/
             sudo ln -sf /usr/local/zig/zig /usr/local/bin/zig
-            rm -rf /tmp/zig.tar.xz /tmp/zig-macos-${arch}-0.13.0
+            rm -rf /tmp/zig.tar.xz /tmp/zig-${arch}-macos-0.15.1
         fi
         ;;
     Linux)
@@ -323,12 +323,12 @@ install_zig_from_binary() {
         arch="x86_64"
     fi
 
-    curl -L "https://ziglang.org/download/0.13.0/zig-linux-${arch}-0.13.0.tar.xz" -o /tmp/zig.tar.xz
+    curl -L "https://ziglang.org/download/0.15.1/zig-${arch}-linux-0.15.1.tar.xz" -o /tmp/zig.tar.xz
     tar -xf /tmp/zig.tar.xz -C /tmp
     sudo mkdir -p /usr/local/zig
-    sudo mv /tmp/zig-linux-${arch}-0.13.0/* /usr/local/zig/
+    sudo mv /tmp/zig-${arch}-linux-0.15.1/* /usr/local/zig/
     sudo ln -sf /usr/local/zig/zig /usr/local/bin/zig
-    rm -rf /tmp/zig.tar.xz /tmp/zig-linux-${arch}-0.13.0
+    rm -rf /tmp/zig.tar.xz /tmp/zig-${arch}-linux-0.15.1
 }
 
 # Install Node.js and npx based on platform
@@ -577,7 +577,8 @@ check_dependencies() {
     echo ""
 
     # Run package manager update once at the beginning (for Linux systems)
-    if [ "$PLATFORM" = "Linux" ]; then
+    # Skip if --docker-optimize is set (Dockerfile already updated package lists)
+    if [ "$PLATFORM" = "Linux" ] && [ "$DOCKER_OPTIMIZE" = false ]; then
         if command_exists apk; then
             log_info "Updating package lists..."
             sudo apk update

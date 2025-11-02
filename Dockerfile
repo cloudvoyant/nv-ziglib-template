@@ -4,13 +4,14 @@
 FROM ubuntu:22.04 AS base
 
 # Install minimal base dependencies
+# Note: Don't clean up apt lists yet - setup.sh needs them with --docker-optimize
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     curl \
     sudo \
     git \
     ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    xz-utils
 
 # Create non-root user
 RUN useradd -m -s /bin/bash vscode && \

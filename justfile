@@ -8,7 +8,7 @@ bash        := require("bash")
 direnv      := require("direnv")
 
 # Environment variables available for all scripts
-export _PROJECT                 := `source .envrc && echo $PROJECT`
+export PROJECT                 := `source .envrc && echo $PROJECT`
 export VERSION                  := `source .envrc && echo $VERSION`
 export GCP_REGISTRY_PROJECT_ID  := `source .envrc && echo $GCP_REGISTRY_PROJECT_ID`
 export GCP_REGISTRY_REGION      := `source .envrc && echo $GCP_REGISTRY_REGION`
@@ -37,31 +37,31 @@ load:
 # Install dependencies
 [group('dev')]
 install:
-    @echo -e "{{INFO}}Fetching Zig dependencies from build.zig.zon...{{NORMAL}}"
+    @echo -e "{{INFO}}Fetching Zig dependencies from build.zig.zon{{NORMAL}}"
     @zig build --fetch
 
 # Build the project
 [group('dev')]
 build:
-    @echo -e "{{INFO}}Building $_PROJECT@$VERSION...{{NORMAL}}"
-    @zig build
+    @echo -e "{{INFO}}Building $PROJECT@$VERSION{{NORMAL}}"
+    @zig build --summary all
 
 # Run project locally
 [group('dev')]
 run: build
-    @echo -e "{{INFO}}Running example...{{NORMAL}}"
+    @echo -e "{{INFO}}Running $PROJECT@$VERSION{{NORMAL}}"
     @zig build run
 
 # Run tests
 [group('dev')]
 test:
-    @echo -e "{{INFO}}Running tests...{{NORMAL}}"
+    @echo -e "{{INFO}}Running tests{{NORMAL}}"
     @zig build test --summary all
 
 # Clean build artifacts
 [group('dev')]
 clean:
-    @echo -e "{{INFO}}Cleaning build artifacts...{{NORMAL}}"
+    @echo -e "{{INFO}}Cleaning build artifacts{{NORMAL}}"
     @rm -rf .zig-cache/ zig-out/ .nv/
     @echo -e "{{SUCCESS}}Clean complete{{NORMAL}}"
 
@@ -93,28 +93,28 @@ setup *ARGS:
 # Format code
 [group('utils')]
 format *PATHS:
-    @echo -e "{{INFO}}Formatting Zig code...{{NORMAL}}"
+    @echo -e "{{INFO}}Formatting Zig code{{NORMAL}}"
     @zig fmt src/ build.zig {{PATHS}}
     @echo -e "{{SUCCESS}}Formatting complete{{NORMAL}}"
 
 # Check code formatting (CI mode)
 [group('utils')]
 format-check *PATHS:
-    @echo -e "{{INFO}}Checking Zig code formatting...{{NORMAL}}"
+    @echo -e "{{INFO}}Checking Zig code formatting{{NORMAL}}"
     @zig fmt --check src/ build.zig {{PATHS}}
     @echo -e "{{SUCCESS}}Format check passed{{NORMAL}}"
 
 # Lint code
 [group('utils')]
 lint *PATHS:
-    @echo -e "{{INFO}}Linting Zig code (building with full warnings)...{{NORMAL}}"
+    @echo -e "{{INFO}}Linting Zig code (building with full warnings){{NORMAL}}"
     @zig build
     @echo -e "{{SUCCESS}}Lint check passed{{NORMAL}}"
 
 # Lint and auto-fix issues
 [group('utils')]
 lint-fix *PATHS:
-    @echo -e "{{INFO}}Auto-fixing Zig code (formatting)...{{NORMAL}}"
+    @echo -e "{{INFO}}Auto-fixing Zig code (formatting){{NORMAL}}"
     @zig fmt src/ build.zig {{PATHS}}
     @echo -e "{{SUCCESS}}Auto-fix complete{{NORMAL}}"
 
@@ -163,15 +163,15 @@ registry-login *ARGS:
 # Build for production
 [group('ci')]
 build-prod:
-    @echo -e "{{INFO}}Building production artifacts for $_PROJECT@$VERSION...{{NORMAL}}"
+    @echo -e "{{INFO}}Building production artifacts for $PROJECT@$VERSION{{NORMAL}}"
     @zig build -Doptimize=ReleaseFast
     @echo -e "{{SUCCESS}}Production build complete in zig-out/{{NORMAL}}"
 
 # Run production binary
 [group('ci')]
 run-prod *ARGS: build-prod
-    @echo -e "{{INFO}}Running production binary...{{NORMAL}}"
-    @./zig-out/bin/$_PROJECT {{ARGS}}
+    @echo -e "{{INFO}}Running production binary{{NORMAL}}"
+    @./zig-out/bin/$PROJECT {{ARGS}}
 
 # Get current version
 [group('ci')]
@@ -199,7 +199,7 @@ publish: test build-prod
         source .envrc
     fi
 
-    echo -e "{{INFO}}Publishing package $PROJECT@$VERSION...{{NORMAL}}"
+    echo -e "{{INFO}}Publishing package $PROJECT@$VERSION{{NORMAL}}"
 
     # Create tarball of binaries for GCP Artifact Registry
     tar -czf $PROJECT-$VERSION.tar.gz -C zig-out .
@@ -228,7 +228,7 @@ scaffold:
 test-template:
     #!/usr/bin/env bash
     if command -v bats >/dev/null 2>&1; then
-        echo -e "{{INFO}}Running template tests...{{NORMAL}}";
+        echo -e "{{INFO}}Running template tests{{NORMAL}}";
         bats test/;
     else
         echo -e "{{ERROR}}bats not installed. Run: just setup --template{{NORMAL}}";
