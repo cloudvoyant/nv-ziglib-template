@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.1.0...v1.2.0) (2025-11-02)
+
+### Features
+
+* added caching for /usr/local/bin binaries to speed up build ([3c32103](https://github.com/cloudvoyant/nv-ziglib-template/commit/3c321036e9ec2b3666d06ab099615605e2e76f37))
+
 ## [1.1.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.0.0...v1.1.0) (2025-11-02)
 
 ### Features
