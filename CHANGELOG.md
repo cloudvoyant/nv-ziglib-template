@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.3.0...v1.4.0) (2025-11-02)
+
+### Features
+
+* switching ci to use setup just action ([ee4eceb](https://github.com/cloudvoyant/nv-ziglib-template/commit/ee4eceb4f6479bce9d739f7776052c0b840a0fc5))
+
 ## [1.3.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.2.0...v1.3.0) (2025-11-02)
 
 ### Features
