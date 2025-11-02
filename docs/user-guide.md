@@ -82,7 +82,7 @@ Commit using conventional commits (`feat:`, `fix:`, `docs:`). Merge/push to main
 
 ### Using Docker
 
-The template includes Docker support for running tasks in isolated containers without installing dependencies on your host machine.
+The template includes Docker support for running tasks in isolated containers without installing Zig or other dependencies on your host machine.
 
 Prerequisites:
 
@@ -91,20 +91,27 @@ Prerequisites:
 Available Docker commands:
 
 ```bash
-just docker-build    # Build the Docker image
-just docker-run      # Run the project in a container
-just docker-test     # Run tests in a container
+just docker-build    # Build the Docker image (installs Zig 0.15.1, just, direnv)
+just docker-run      # Run the Zig binary in a container
+just docker-test     # Run Zig tests in a container
 ```
 
-The `Dockerfile` and `docker-compose.yml` are configured to install all required dependencies automatically. This is useful for:
+The `Dockerfile` and `docker-compose.yml` are configured to install all required dependencies automatically, including:
 
-- Running tasks without installing tools locally
+- Zig 0.15.1 (installed via setup.sh)
+- just (command runner)
+- direnv (environment management)
+- All build dependencies
+
+This is useful for:
+
+- Running Zig builds without installing Zig locally
 - Ensuring consistency across different development machines
-- Testing in a clean environment
+- Testing in a clean Linux environment (Ubuntu 22.04)
 
 ### Using Dev Containers
 
-The template includes a pre-configured devcontainer for consistent cross-platform development environments across your team.
+The template includes a pre-configured devcontainer for consistent cross-platform Zig development environments across your team.
 
 Prerequisites on host:
 
@@ -115,14 +122,21 @@ If you have Docker running and the Dev Container extension installed, then you c
 
 1. Open project in VS Code
 2. Command Palette (Cmd/Ctrl+Shift+P) → "Dev Containers: Reopen in Container"
-3. Wait for container build (first time only)
+3. Wait for container build (first time only, includes Zig installation)
 
-VS Code should reopen. In your terminal, you will now find everything you need including `just`, `direnv`, `gcloud` and more:
+VS Code should reopen with full Zig development support:
 
-- Git, GitHub CLI, and Google Cloud CLI pre-installed
+**Zig Development:**
+- Zig 0.15.1 pre-installed
+- ZLS (Zig Language Server) automatically installed by the Zig extension
+- Syntax highlighting, autocomplete, and go-to-definition
+- Inline error checking and formatting
+
+**Shell & Infrastructure:**
+- `just`, `direnv`, Git, GitHub CLI, and Google Cloud CLI pre-installed
 - Git credentials automatically shared from host via SSH agent forwarding
 - Claude CLI credentials mounted from `~/.claude`
-- All VS Code extensions for shell development (shellcheck, just syntax, etc.)
+- All VS Code extensions (Zig, shellcheck, just syntax, Docker, etc.)
 - Docker-in-Docker support for building containers
 
 Authentication:
@@ -141,6 +155,107 @@ just build      # Build for development
 just test       # Run tests
 just run        # Run locally
 just clean      # Clean build artifacts
+```
+
+## Installation & Usage
+
+This template supports two use cases:
+
+1. **As a CLI Tool**: End users install pre-built binaries
+2. **As a Library**: Zig projects import as a dependency
+
+### Installing as a CLI Tool
+
+**Option 1: Quick Install (Recommended)**
+
+```bash
+curl -sSL https://raw.githubusercontent.com/cloudvoyant/nv-ziglib-template/main/install.sh | bash
+```
+
+This script:
+- Detects your OS and architecture
+- Downloads the appropriate binary from GitHub Releases
+- Installs to `~/.local/bin` or `/usr/local/bin`
+- Verifies installation
+
+**Option 2: Manual Installation**
+
+1. Download the binary for your platform from [GitHub Releases](https://github.com/cloudvoyant/nv-ziglib-template/releases):
+   - `nv-ziglib-template-linux-x86_64`
+   - `nv-ziglib-template-linux-aarch64`
+   - `nv-ziglib-template-macos-x86_64`
+   - `nv-ziglib-template-macos-aarch64`
+   - `nv-ziglib-template-windows-x86_64.exe`
+
+2. Extract and add to PATH:
+   ```bash
+   # Linux/macOS
+   tar -xzf nv-ziglib-template-*.tar.gz
+   mv nv-ziglib-template-* ~/.local/bin/nv-ziglib-template
+   chmod +x ~/.local/bin/nv-ziglib-template
+
+   # Add to PATH if needed
+   echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+**Option 3: Build from Source**
+
+```bash
+git clone https://github.com/cloudvoyant/nv-ziglib-template.git
+cd nv-ziglib-template
+zig build -Doptimize=ReleaseFast
+sudo cp zig-out/bin/nv-ziglib-template /usr/local/bin/
+```
+
+### Using as a Library (Zig Projects)
+
+Add this package as a dependency in your `build.zig.zon`:
+
+```zig
+.{
+    .name = "my-project",
+    .version = "0.1.0",
+    .dependencies = .{
+        .nv_ziglib_template = .{
+            .url = "https://github.com/cloudvoyant/nv-ziglib-template/archive/refs/tags/v1.0.0.tar.gz",
+            .hash = "1220...", // See below for getting the correct hash
+        },
+    },
+}
+```
+
+**Getting the correct hash:**
+
+```bash
+# Quick method: Let Zig tell you the hash
+zig fetch --save https://github.com/cloudvoyant/nv-ziglib-template/archive/refs/tags/v1.0.0.tar.gz
+
+# Or manually: Put any random hash, run `zig build`, Zig will output the correct hash
+```
+
+**Using the library in your code:**
+
+In your `build.zig`:
+
+```zig
+const nv_ziglib_template = b.dependency("nv_ziglib_template", .{
+    .target = target,
+    .optimize = optimize,
+});
+
+exe.root_module.addImport("nv-ziglib-template", nv_ziglib_template.module("nv-ziglib-template"));
+```
+
+In your source code:
+
+```zig
+const stringutils = @import("nv-ziglib-template");
+
+pub fn main() void {
+    const reversed = stringutils.reverse("Hello");
+    // Use the library functions...
+}
 ```
 
 ### Commit and Release
@@ -246,10 +361,44 @@ export GCP_REGISTRY_NAME="my-registry"
 
 Configure secrets once at the organization level (Settings → Secrets → Actions):
 
-For GCP (default):
+For GitHub Releases (Default - Always Active):
 
-- `GCP_SA_KEY` - Service account JSON key
-- `GCP_REGISTRY_PROJECT_ID`, `GCP_REGISTRY_REGION`, `GCP_REGISTRY_NAME`
+No configuration needed! Binaries are automatically published to GitHub Releases using the GITHUB_TOKEN.
+
+For GCP Artifact Registry (Optional - Enterprise/Internal Distribution):
+
+Publishing to GCP is conditional - it only runs if GCP credentials are configured:
+
+- `GCP_SA_KEY` - Service account JSON key with Artifact Registry Writer role
+- `GCP_REGISTRY_PROJECT_ID` - Your GCP project ID
+- `GCP_REGISTRY_REGION` - Registry region (e.g., `us-central1`)
+- `GCP_REGISTRY_NAME` - Artifact Registry repository name
+
+Setting up GCP publishing:
+
+1. Create a service account with Artifact Registry Writer role:
+   ```bash
+   gcloud iam service-accounts create artifact-publisher \
+     --display-name="Artifact Registry Publisher"
+
+   gcloud projects add-iam-policy-binding PROJECT_ID \
+     --member="serviceAccount:artifact-publisher@PROJECT_ID.iam.gserviceaccount.com" \
+     --role="roles/artifactregistry.writer"
+   ```
+
+2. Create and download JSON key:
+   ```bash
+   gcloud iam service-accounts keys create key.json \
+     --iam-account=artifact-publisher@PROJECT_ID.iam.gserviceaccount.com
+   ```
+
+3. Add secrets to GitHub repository (Settings → Secrets → Actions):
+   - `GCP_SA_KEY`: Contents of `key.json`
+   - `GCP_REGISTRY_PROJECT_ID`: Your project ID
+   - `GCP_REGISTRY_REGION`: e.g., `us-central1`
+   - `GCP_REGISTRY_NAME`: Your repository name
+
+4. On next release, binaries will be published to both GitHub Releases and GCP Artifact Registry
 
 For other registries:
 

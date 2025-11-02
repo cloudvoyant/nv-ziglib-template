@@ -167,6 +167,35 @@ build-prod:
     @zig build -Doptimize=ReleaseFast
     @echo -e "{{SUCCESS}}Production build complete in zig-out/{{NORMAL}}"
 
+# Build for specific platform (cross-compilation)
+[group('ci')]
+build-platform target os arch:
+    @echo -e "{{INFO}}Building for {{target}} ({{os}}-{{arch}}){{NORMAL}}"
+    @zig build -Doptimize=ReleaseFast -Dtarget={{target}}
+    @echo -e "{{INFO}}Renaming binary with platform suffix{{NORMAL}}"
+    @if [ "{{os}}" = "windows" ]; then \
+        if [ -f zig-out/bin/$PROJECT.exe ]; then \
+            mv zig-out/bin/$PROJECT.exe zig-out/bin/$PROJECT-{{os}}-{{arch}}.exe; \
+        elif [ -f zig-out/bin/$PROJECT ]; then \
+            mv zig-out/bin/$PROJECT zig-out/bin/$PROJECT-{{os}}-{{arch}}.exe; \
+        fi \
+    else \
+        mv zig-out/bin/$PROJECT zig-out/bin/$PROJECT-{{os}}-{{arch}}; \
+    fi
+    @echo -e "{{SUCCESS}}Built zig-out/bin/$PROJECT-{{os}}-{{arch}}{{NORMAL}}"
+
+# Build all platforms (for releases)
+[group('ci')]
+build-all-platforms:
+    @echo -e "{{INFO}}Building all platforms{{NORMAL}}"
+    @rm -rf zig-out/bin/*
+    just build-platform x86_64-linux linux x86_64
+    just build-platform aarch64-linux linux aarch64
+    just build-platform x86_64-macos macos x86_64
+    just build-platform aarch64-macos macos aarch64
+    just build-platform x86_64-windows windows x86_64
+    @echo -e "{{SUCCESS}}All platforms built in zig-out/bin/{{NORMAL}}"
+
 # Run production binary
 [group('ci')]
 run-prod *ARGS: build-prod
@@ -188,9 +217,9 @@ version-next:
 upversion *ARGS:
     @bash -c scripts/upversion.sh {{ARGS}}
 
-# Publish the project
+# Publish the project (individual platform binaries to GCP)
 [group('ci')]
-publish: test build-prod
+publish:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -199,20 +228,24 @@ publish: test build-prod
         source .envrc
     fi
 
-    echo -e "{{INFO}}Publishing package $PROJECT@$VERSION{{NORMAL}}"
+    echo -e "{{INFO}}Publishing $PROJECT@$VERSION binaries to GCP{{NORMAL}}"
 
-    # Create tarball of binaries for GCP Artifact Registry
-    tar -czf $PROJECT-$VERSION.tar.gz -C zig-out .
+    # Upload each platform binary individually to GCP Artifact Registry
+    for binary in zig-out/bin/$PROJECT-*; do
+        if [ -f "$binary" ]; then
+            filename=$(basename "$binary")
+            echo -e "{{INFO}}Uploading $filename{{NORMAL}}"
+            gcloud artifacts generic upload \
+                --project=$GCP_REGISTRY_PROJECT_ID \
+                --location=$GCP_REGISTRY_REGION \
+                --repository=$GCP_REGISTRY_NAME \
+                --package=$PROJECT \
+                --version=$VERSION \
+                --source="$binary"
+        fi
+    done
 
-    gcloud artifacts generic upload \
-        --project=$GCP_REGISTRY_PROJECT_ID \
-        --location=$GCP_REGISTRY_REGION \
-        --repository=$GCP_REGISTRY_NAME \
-        --package=$PROJECT \
-        --version=$VERSION \
-        --source=$PROJECT-$VERSION.tar.gz
-
-    echo -e "{{SUCCESS}}Published $PROJECT@$VERSION{{NORMAL}}"
+    echo -e "{{SUCCESS}}Published $PROJECT@$VERSION to GCP{{NORMAL}}"
 
 # ==============================================================================
 # TEMPLATE
