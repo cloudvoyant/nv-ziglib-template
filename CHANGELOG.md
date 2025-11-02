@@ -1,3 +1,9 @@
+## [1.6.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.5.0...v1.6.0) (2025-11-02)
+
+### Features
+
+* modernize Zig dependency management and improve developer experience ([8e8f7b1](https://github.com/cloudvoyant/nv-ziglib-template/commit/8e8f7b1edd7085aafae5a89126b5c59a10373cc7))
+
 ## [1.5.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.4.0...v1.5.0) (2025-11-02)
 
 ### Features
