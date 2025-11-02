@@ -53,10 +53,13 @@ update_file_exclusions() {
                 s/"\.gitattributes": [^,]*/"\.gitattributes": true/
                 s/"\.releaserc\.json": [^,]*/"\.releaserc.json": true/
                 s/"\.nv": [^,]*/"\.nv": true/
+                s/"\.zig-cache": [^,]*/"\.zig-cache": true/
                 s/"\.dockerignore": [^,]*/"\.dockerignore": true/
                 s/"Dockerfile": [^,]*/"Dockerfile": true/
                 s/"docker-compose\.yml": [^,]*/"docker-compose.yml": true/
                 s/"justfile": [^,]*/"justfile": false/
+                s/"build\.zig": [^,]*/"build.zig": false/
+                s/"build\.zig\.zon": [^,]*/"build.zig.zon": false/
                 s/"version\.txt": [^,]*/"version.txt": true/
                 s/"\.claude": [^,]*/"\.claude": false/
                 s/"scripts": [^,]*/"scripts": true/
@@ -76,8 +79,17 @@ update_file_exclusions() {
         if ! grep -q '"justfile"' "$SETTINGS_FILE"; then
             sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "justfile": false,\n\1}/' "$SETTINGS_FILE"
         fi
+        if ! grep -q '"build.zig"' "$SETTINGS_FILE"; then
+            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "build.zig": false,\n\1}/' "$SETTINGS_FILE"
+        fi
+        if ! grep -q '"build.zig.zon"' "$SETTINGS_FILE"; then
+            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "build.zig.zon": false,\n\1}/' "$SETTINGS_FILE"
+        fi
         if ! grep -q '"version.txt"' "$SETTINGS_FILE"; then
             sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "version.txt": true,\n\1}/' "$SETTINGS_FILE"
+        fi
+        if ! grep -q '".zig-cache"' "$SETTINGS_FILE"; then
+            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    ".zig-cache": true,\n\1}/' "$SETTINGS_FILE"
         fi
         if ! grep -q '".dockerignore"' "$SETTINGS_FILE"; then
             sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    ".dockerignore": true,\n\1}/' "$SETTINGS_FILE"
@@ -103,6 +115,7 @@ update_file_exclusions() {
                 s/"\.gitattributes": [^,]*/"\.gitattributes": false/
                 s/"\.releaserc\.json": [^,]*/"\.releaserc.json": false/
                 s/"\.nv": [^,]*/"\.nv": false/
+                s/"\.zig-cache": [^,]*/"\.zig-cache": false/
                 s/"\.dockerignore": [^,]*/"\.dockerignore": false/
                 s/"Dockerfile": [^,]*/"Dockerfile": false/
                 s/"docker-compose\.yml": [^,]*/"docker-compose.yml": false/
@@ -144,7 +157,7 @@ case "$MODE" in
         log_info "Hiding non-essential files in VS Code..."
         if update_file_exclusions "hide"; then
             log_success "VS Code: Files hidden successfully"
-            log_info "VS Code visible: docs/, src/, test/, .claude/, .envrc, justfile, README.md"
+            log_info "VS Code visible: docs/, src/, test/, .claude/, .envrc, justfile, build.zig, build.zig.zon, README.md"
         else
             log_error "Failed to update VS Code settings"
             exit 1

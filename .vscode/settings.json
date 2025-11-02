@@ -2,29 +2,33 @@
   // File visibility
   "files.exclude": {
     ".claude": false,
-    ".devcontainer": false,
-    ".vscode": false,
-    ".github": false,
-    ".editorconfig": false,
-    ".gitignore": false,
-    ".gitattributes": false,
-    ".releaserc.json": false,
-    ".nv": false,
-    "Dockerfile": false,
-    "docker-compose.yml": false,
+    ".devcontainer": true,
+    ".vscode": true,
+    ".github": true,
+    ".editorconfig": true,
+    ".gitignore": true,
+    ".gitattributes": true,
+    ".releaserc.json": true,
+    ".nv": true,
+    "Dockerfile": true,
+    "docker-compose.yml": true,
     "justfile": false,
-    "version.txt": false,
-    ".dockerignore": false,
-    "scripts": false,
-    "CONTRIBUTING.md": false,
-    "CHANGELOG.md": false
+    "version.txt": true,
+    ".dockerignore": true,
+    "scripts": true,
+    "CONTRIBUTING.md": true,
+    "CHANGELOG.md": true,
+    ".zig-cache": true,
+    "build.zig": false,
+    "build.zig.zon": false
   },
 
   // Search exclusions
   "search.exclude": {
     "**/.nv": true,
     "**/node_modules": true,
-    "**/.git": true
+    "**/.git": true,
+    "**/.zig-cache": true
   },
 
   // File associations
@@ -75,5 +79,14 @@
 
   "[yaml]": {
     "editor.tabSize": 2
-  }
+  },
+
+  "[zig]": {
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ziglang.vscode-zig"
+  },
+  "zig.path": "zig",
+  "zig.initialSetupDone": true,
+  "zig.formattingProvider": "zls"
 }

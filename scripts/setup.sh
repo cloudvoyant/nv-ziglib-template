@@ -5,7 +5,7 @@ Installs development dependencies for this platform.
 Usage: setup.sh [OPTIONS]
 
 Options:
-  --dev              Install development tools (docker, shellcheck, shfmt, claude)
+  --dev              Install development tools (docker, shellcheck, shfmt, claude, zls)
   --ci               Install CI essentials (node/npx, gcloud)
   --template         Install template development tools (bats-core)
   --docker-optimize  Optimize for Docker image size (consolidate operations, aggressive cleanup)
@@ -25,6 +25,7 @@ Development tools (--dev):
 - shellcheck (shell script linter)
 - shfmt (shell script formatter)
 - claude (Claude CLI)
+- zls (Zig Language Server)
 
 CI essentials (--ci):
 - node/npx (for semantic-release)
@@ -73,7 +74,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -h, --help    Show this help message"
             echo ""
             echo "Required: bash, just, direnv, zig"
-            echo "Development (--dev): docker, node/npx, gcloud, shellcheck, shfmt, claude"
+            echo "Development (--dev): docker, node/npx, gcloud, shellcheck, shfmt, claude, zls"
             echo "CI (--ci): docker, node/npx, gcloud"
             echo "Template (--template): bats-core"
             exit 0
@@ -365,6 +366,61 @@ install_node() {
     esac
 
     log_success "Node.js installation completed"
+}
+
+# Install ZLS (Zig Language Server) based on platform
+install_zls() {
+    log_info "Installing ZLS (Zig Language Server)..."
+
+    case $PLATFORM in
+    Mac)
+        if command_exists brew; then
+            brew install zls
+        else
+            log_warn "Homebrew not found. Please install ZLS manually from https://github.com/zigtools/zls"
+            return 1
+        fi
+        ;;
+    Linux)
+        if command_exists apk; then
+            # Alpine - install from binary
+            log_info "Installing ZLS from GitHub releases..."
+            ZLS_VERSION="0.15.0"
+            ZLS_ARCH="x86_64"
+            ZLS_URL="https://github.com/zigtools/zls/releases/download/${ZLS_VERSION}/zls-${ZLS_ARCH}-linux.tar.xz"
+            curl -L "${ZLS_URL}" | sudo tar -xJ -C /usr/local/bin zls
+            sudo chmod +x /usr/local/bin/zls
+        elif command_exists apt-get; then
+            # Ubuntu/Debian - install from GitHub releases
+            log_info "Installing ZLS from GitHub releases..."
+            ZLS_VERSION="0.15.0"
+            ZLS_ARCH="x86_64"
+            ZLS_URL="https://github.com/zigtools/zls/releases/download/${ZLS_VERSION}/zls-${ZLS_ARCH}-linux.tar.xz"
+            curl -L "${ZLS_URL}" | sudo tar -xJ -C /usr/local/bin zls
+            sudo chmod +x /usr/local/bin/zls
+        elif command_exists dnf; then
+            # Fedora - install from GitHub releases
+            log_info "Installing ZLS from GitHub releases..."
+            ZLS_VERSION="0.15.0"
+            ZLS_ARCH="x86_64"
+            ZLS_URL="https://github.com/zigtools/zls/releases/download/${ZLS_VERSION}/zls-${ZLS_ARCH}-linux.tar.xz"
+            sudo curl -L "${ZLS_URL}" | sudo tar -xJ -C /usr/local/bin zls
+            sudo chmod +x /usr/local/bin/zls
+        elif command_exists pacman; then
+            # Arch - available in community repository
+            sudo pacman -S zls
+        else
+            log_warn "No suitable package manager found. Please install ZLS manually from https://github.com/zigtools/zls"
+            return 1
+        fi
+        ;;
+    *)
+        log_warn "Unsupported platform for automatic ZLS installation. Please install ZLS manually from https://github.com/zigtools/zls"
+        return 1
+        ;;
+    esac
+
+    log_success "ZLS installation completed"
 }
 
 # Install gcloud based on platform
@@ -770,6 +826,22 @@ check_dependencies() {
                 log_success "Claude CLI installed successfully"
             else
                 log_warn "Skipping Claude CLI - ensure Node.js is installed and try 'npm install -g @anthropic-ai/claude-cli' manually"
+            fi
+        fi
+    fi
+
+    # Check ZLS (for --dev only)
+    if [ "$INSTALL_DEV" = true ]; then
+        current=$((current + 1))
+        progress_step $current $total "Checking ZLS (Zig Language Server)..."
+        if command_exists zls; then
+            log_success "ZLS is already installed: $(zls --version)"
+        else
+            log_warn "ZLS not found (Zig Language Server for IDE support)"
+            if install_zls; then
+                log_success "ZLS installed successfully"
+            else
+                log_warn "Skipping ZLS - install manually from https://github.com/zigtools/zls if needed"
             fi
         fi
     fi

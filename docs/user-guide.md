@@ -1,25 +1,36 @@
 # User Guide
 
-`nv-ziglib-template` is a language-agnostic template for building projects with automated versioning, testing, and GitHub Action powered CI/CD workflows. It uses GCP Artifact Registry for publishing generic packages by default, but can be easily adapted for npm, PyPI, NuGet, CodeArtifact, etc.
+`nv-ziglib-template` is a production-ready Zig project template with automated versioning, multi-platform binary distribution, and GitHub Actions CI/CD. Build CLI tools or libraries with cross-compilation support for Linux, macOS, and Windows.
 
 ## Features
 
-Here's what this template gives you off the bat:
+Zig-Specific:
+- Zig 0.15.1 with automatic dependency fetching via build.zig.zon
+- Multi-platform binary builds: Linux (x86_64, aarch64), macOS (x86_64, aarch64), Windows (x86_64)
+- Code formatting with `zig fmt` integrated into CI
+- Example library with comprehensive tests demonstrating Zig patterns
+- Dual-use: build CLI tools (with install script) or libraries (via build.zig.zon)
 
-- A language-agnostic self-documenting command interface via `just`. Keep all your project commands organized in one file!
-- Auto-load environment variables and configure shell environment with `direnv` - share project scoped shell configurations and simplify scripting and CLI tool usage without needing to pass around flags and inline environment variables.
-- CI/CD with GitHub Actions - run test on MR commits, tag and release on merges to main.
-- Easy CI/CD customization with language-agnostic bash scripting - No need to get too deep into GitHub Actions for customization. Modify the publish recipe, set GitHub Secrets and you're good to go.
-- Trunk based development and automated versioning with conventional commits - semantic-release will handle version bumping for you! Work on feature branches and merge to main for bumps.
-- GCP Artifact Registry publishing (easily modified for other registries)
-- Cross-platform (macOS, Linux, Windows via WSL) - use the setup script to install dependencies, or alternately develop with Dev Containers or run tasks via Docker
+Development Experience:
+- Self-documenting command interface via `just` - all build/test/release commands in one place
+- Auto-load environment with `direnv` for seamless shell integration
+- Dev Containers with Zig + ZLS (language server) pre-configured
+- Docker support for building without local Zig installation
+- Hot reload workflow: `just run` rebuilds and runs on save
+
+CI/CD & Publishing:
+- Automated versioning with conventional commits (semantic-release)
+- Multi-platform binaries published to GitHub Releases
+- Optional GCP Artifact Registry publishing for enterprise distribution
+- Tests run on every PR, releases on merge to main
 
 ## Requirements
 
 - bash 3.2+
-- [just](https://just.systems/man/en/)
+- Zig 0.15.1
+- [just](https://just.systems/man/en/) (command runner)
 
-Run `just setup` to install remaining dependencies (just, direnv).
+Run `just setup` to install all dependencies automatically (Zig, just, direnv).
 
 Optional: `just setup --dev` for development tools, `just setup --template` for template testing.
 
@@ -27,7 +38,7 @@ Optional: `just setup --dev` for development tools, `just setup --template` for 
 
 ## Quick Start
 
-Scaffold a new project:
+Create a new Zig project from this template:
 
 ```bash
 # Option 1: Nedavellir CLI (automated)
@@ -40,15 +51,16 @@ cd <your-new-repo>
 bash scripts/scaffold.sh --project your-project-name
 ```
 
-Install dependencies and adapt the template for your needs:
+Setup and build:
 
 ```bash
-just setup              # Required: bash, just, direnv
-just scaffold           # Scaffold project - apply project name and reset version
-claude /adapt           # Guided customization for your language / package manager
+just setup              # Install Zig 0.15.1, just, direnv
+just build              # Build with Zig
+just test               # Run Zig tests
+just run                # Run your application
 ```
 
-Type `just` to see all the tasks at your disposal:
+View all available commands:
 
 ```bash
 ❯ just
@@ -60,25 +72,37 @@ Available recipes:
     run                  # Run project locally
     test                 # Run tests
     clean                # Clean build artifacts
+    format               # Format Zig code
+    lint                 # Lint Zig code
 
 [ OUTPUT TRUNCATED ]
 ```
 
-Build run and test with `just`. The template will show TODO messages in console prior to adapting.
+Example build and test:
 
 ```bash
-❯ just run
-TODO: Implement build for nv-lib-template@1.9.1
-TODO: Implement run
+❯ just build
+Building nv-ziglib-template@1.1.0
+Build Summary: 3/3 steps succeeded
+└─ install
+   └─ install nv-ziglib-template
 
 ❯ just test
-TODO: Implement build for nv-lib-template@1.9.1
-TODO: Implement test
+Running tests
+
+Build Summary: 3/3 steps succeeded; 7/7 tests passed
+test success
++- run test 7 passed 1ms MaxRSS:1M
+   +- compile test Debug native cached 45ms MaxRSS:30M
 ```
 
-Note how just runs the necessary dependencies for a task on it's own!
+Commit using conventional commits to trigger automated releases:
 
-Commit using conventional commits (`feat:`, `fix:`, `docs:`). Merge/push to main and CI/CD will run automatically bumping your project version and publishing a package.
+```bash
+git commit -m "feat: add new string utility"
+git push origin main
+# CI automatically: runs tests → creates release → publishes binaries
+```
 
 ### Using Docker
 
@@ -126,13 +150,13 @@ If you have Docker running and the Dev Container extension installed, then you c
 
 VS Code should reopen with full Zig development support:
 
-**Zig Development:**
+Zig Development:
 - Zig 0.15.1 pre-installed
 - ZLS (Zig Language Server) automatically installed by the Zig extension
 - Syntax highlighting, autocomplete, and go-to-definition
 - Inline error checking and formatting
 
-**Shell & Infrastructure:**
+Shell & Infrastructure:
 - `just`, `direnv`, Git, GitHub CLI, and Google Cloud CLI pre-installed
 - Git credentials automatically shared from host via SSH agent forwarding
 - Claude CLI credentials mounted from `~/.claude`
@@ -140,7 +164,6 @@ VS Code should reopen with full Zig development support:
 - Docker-in-Docker support for building containers
 
 Authentication:
-
 - Git/GitHub: Automatic via SSH agent forwarding (no setup needed)
 - gcloud: Run `gcloud auth login` inside the container on first use
 - Claude: Automatically available if configured on host
@@ -150,11 +173,14 @@ Authentication:
 ### Daily Commands
 
 ```bash
-just install    # Install project dependencies
-just build      # Build for development
-just test       # Run tests
-just run        # Run locally
-just clean      # Clean build artifacts
+just install    # Fetch Zig dependencies (from build.zig.zon)
+just build      # Build with Zig (debug mode)
+just test       # Run Zig tests
+just run        # Build and run your application
+just clean      # Clean .zig-cache/ and zig-out/
+just format     # Format Zig code with zig fmt
+just lint       # Lint code (alias for build - checks compilation)
+just lint-fix   # Auto-fix formatting (alias for format)
 ```
 
 ## Installation & Usage
@@ -166,7 +192,7 @@ This template supports two use cases:
 
 ### Installing as a CLI Tool
 
-**Option 1: Quick Install (Recommended)**
+#### Option 1: Quick Install (Recommended)
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/cloudvoyant/nv-ziglib-template/main/install.sh | bash
@@ -178,7 +204,7 @@ This script:
 - Installs to `~/.local/bin` or `/usr/local/bin`
 - Verifies installation
 
-**Option 2: Manual Installation**
+#### Option 2: Manual Installation
 
 1. Download the binary for your platform from [GitHub Releases](https://github.com/cloudvoyant/nv-ziglib-template/releases):
    - `nv-ziglib-template-linux-x86_64`
@@ -199,7 +225,7 @@ This script:
    source ~/.bashrc
    ```
 
-**Option 3: Build from Source**
+#### Option 3: Build from Source
 
 ```bash
 git clone https://github.com/cloudvoyant/nv-ziglib-template.git
@@ -210,31 +236,21 @@ sudo cp zig-out/bin/nv-ziglib-template /usr/local/bin/
 
 ### Using as a Library (Zig Projects)
 
-Add this package as a dependency in your `build.zig.zon`:
+#### Step 1: Add the dependency
 
-```zig
-.{
-    .name = "my-project",
-    .version = "0.1.0",
-    .dependencies = .{
-        .nv_ziglib_template = .{
-            .url = "https://github.com/cloudvoyant/nv-ziglib-template/archive/refs/tags/v1.0.0.tar.gz",
-            .hash = "1220...", // See below for getting the correct hash
-        },
-    },
-}
-```
-
-**Getting the correct hash:**
+Use `zig fetch` to automatically add this package to your `build.zig.zon`:
 
 ```bash
-# Quick method: Let Zig tell you the hash
-zig fetch --save https://github.com/cloudvoyant/nv-ziglib-template/archive/refs/tags/v1.0.0.tar.gz
+# Use a specific version (recommended for production)
+zig fetch --save "git+https://github.com/cloudvoyant/nv-ziglib-template#v1.1.0"
 
-# Or manually: Put any random hash, run `zig build`, Zig will output the correct hash
+# Or track the latest changes on main
+zig fetch --save "git+https://github.com/cloudvoyant/nv-ziglib-template#main"
 ```
 
-**Using the library in your code:**
+This automatically updates `build.zig.zon` with the correct hash.
+
+#### Step 2: Configure your build
 
 In your `build.zig`:
 
@@ -244,7 +260,7 @@ const nv_ziglib_template = b.dependency("nv_ziglib_template", .{
     .optimize = optimize,
 });
 
-exe.root_module.addImport("nv-ziglib-template", nv_ziglib_template.module("nv-ziglib-template"));
+exe.root_module.addImport("nv-ziglib-template", nv_ziglib_template.module("nv_ziglib_template"));
 ```
 
 In your source code:
@@ -297,65 +313,143 @@ just show
 
 This reveals all hidden configuration files (`.github/`, `.vscode/`, `.devcontainer/`, `Dockerfile`, `docker-compose.yml`, `scripts/`, etc.).
 
-**Note**: These commands are VS Code-specific and modify `.vscode/settings.json`. If you use a different editor, you'll need to configure file visibility using your editor's native settings.
+Note: These commands are VS Code-specific and modify `.vscode/settings.json`. If you use a different editor, you'll need to configure file visibility using your editor's native settings.
 
-**Limitation**: Hidden files won't appear in VS Code search results (Cmd+Shift+F) unless you run `just show` first or toggle "Use Exclude Settings" in the search panel.
+Limitation: Hidden files won't appear in VS Code search results (Cmd+Shift+F) unless you run `just show` first or toggle "Use Exclude Settings" in the search panel.
 
-## Customizing The Template For Your Needs
+## Working with Zig
 
-### For Your Language
+### Zig Build System (build.zig)
 
-The `justfile` contains TODO placeholders. Run Claude's `/adapt` command for guided customization:
+The template uses Zig's native build system. Key concepts:
+
+build.zig defines your build configuration:
+```zig
+const std = @import("std");
+
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    // Create library
+    const lib = b.addStaticLibrary(.{
+        .name = "nv-ziglib-template",
+        .root_source_file = b.path("src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    // Create executable
+    const exe = b.addExecutable(.{
+        .name = "nv-ziglib-template",
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+}
+```
+
+Build options:
+- `zig build` - Debug build (default)
+- `zig build -Doptimize=ReleaseFast` - Optimized for speed
+- `zig build -Doptimize=ReleaseSafe` - Optimized with safety checks
+- `zig build -Dtarget=x86_64-linux` - Cross-compile for specific target
+
+### Dependency Management (build.zig.zon)
+
+Add dependencies using `zig fetch --save` with git URLs:
 
 ```bash
-claude /adapt
+# Use a specific version (recommended for production)
+zig fetch --save "git+https://github.com/user/repo#v1.0.0"
+
+# Or track a branch (main, master, develop, etc.)
+zig fetch --save "git+https://github.com/user/repo#main"
 ```
 
-Or manually replace placeholders with your language's commands:
+This automatically updates `build.zig.zon` with the correct hash.
 
-```just
-# Node.js example
-install:
-    npm install
+Then use in your `build.zig`:
 
-build:
-    npm run build
+```zig
+const some_package = b.dependency("some_package", .{
+    .target = target,
+    .optimize = optimize,
+});
 
-test: build
-    npm test
-
-publish: test build-prod
-    npm publish
+exe.root_module.addImport("some_package", some_package.module("some_package"));
 ```
 
-### For Your Registry
+### Code Formatting
 
-The `publish` recipe defaults to GCP Artifact Registry. Edit it for your registry:
-
-```just
-# npm
-publish: test build-prod
-    npm publish
-
-# PyPI
-publish: test build-prod
-    twine upload dist/*
-
-# Docker
-publish: test build-prod
-    docker push myimage:{{VERSION}}
-```
-
-Configure your `.envrc` accordingly:
+The template integrates `zig fmt` for automatic code formatting:
 
 ```bash
-# GCP (default)
-export GCP_REGISTRY_PROJECT_ID="my-project"
-export GCP_REGISTRY_REGION="us-east1"
-export GCP_REGISTRY_NAME="my-registry"
-
-# Or use registry-specific variables for npm, PyPI, etc.
+just format              # Format all Zig code
+just format-check        # Check formatting (CI mode)
 ```
+
+Zig has an official style enforced by `zig fmt`. No configuration needed.
+
+### Linting
+
+Zig doesn't have a separate linter - compilation itself serves as the linting step:
+
+```bash
+just lint                # Check compilation (alias for 'just build')
+just lint-fix            # Auto-fix formatting (alias for 'just format')
+```
+
+In Zig:
+- Linting = compilation with warnings/errors (`zig build`)
+- Formatting = code style enforcement (`zig fmt`)
+- Lint-fix = auto-format code (same as `just format`)
+
+Since Zig's compiler catches most issues during compilation, there's no need for a separate linting tool like ESLint or pylint. The `lint-fix` command only fixes formatting issues - compilation errors must be fixed manually.
+
+### Testing
+
+Tests live inline with your source code:
+
+```zig
+// src/stringutils.zig
+pub fn reverse(s: []const u8) []u8 {
+    // implementation
+}
+
+test "reverse" {
+    const result = reverse("hello");
+    try std.testing.expectEqualStrings("olleh", result);
+}
+```
+
+Run tests:
+```bash
+just test                # Run all tests
+zig build test           # Direct Zig command
+```
+
+### Project Structure
+
+This template is a dual-use project (library + CLI):
+
+```
+src/
+├── lib.zig    # Library module (exports public API functions)
+└── main.zig   # CLI executable entry point
+```
+
+Key files:
+- `src/lib.zig` - Library module that other Zig projects can import
+- `src/main.zig` - Command-line tool that uses the library
+- `build.zig` - Build configuration (defines both library and executable)
+- `build.zig.zon` - Package manifest with dependencies
+
+How it works:
+- The `lib.zig` module exports public functions (e.g., `startsWith`, `endsWith`)
+- The `main.zig` executable imports and uses the library
+- External projects can import just the library via `build.zig.zon`
+- End users can install the CLI binary from GitHub Releases
 
 ### CI/CD Secrets
 
@@ -412,12 +506,32 @@ All projects automatically inherit organization secrets.
 
 ### Customizing Behavior
 
-Scripts in `scripts/` provide hooks for overriding CI/CD behavior:
+You can customize CI/CD behavior in three places:
 
-- `scripts/upversion.sh` - Modify versioning logic here
-- `scripts/setup.sh` - Add custom dependencies here
+1. `justfile` - Modify build, test, lint, format commands that CI uses
+2. `scripts/` - Modify versioning and setup hooks
+3. `.releaserc.json` - Configure semantic-release plugins
 
-Edit these scripts to change how CI/CD runs, but avoid editing `.github/workflows/` directly.
+Customization points:
+
+- `justfile` - Change how `just build`, `just test`, `just lint`, etc. work
+- `scripts/upversion.sh` - Modify versioning logic
+- `scripts/setup.sh` - Add custom dependencies
+- `.releaserc.json` - Configure semantic-release plugins
+
+Avoid editing `.github/workflows/` directly - modify the files above instead.
+
+### Example: Custom Build Steps
+
+The CI workflow runs `just build`. To add custom build steps, modify the `build` recipe in `justfile`:
+
+```just
+build:
+    @echo "Running custom pre-build checks..."
+    @./scripts/validate.sh
+    @echo "Building with Zig..."
+    @zig build
+```
 
 ### Example: Custom Versioning
 

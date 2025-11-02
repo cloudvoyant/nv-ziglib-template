@@ -2,23 +2,22 @@
 
 ## Overview
 
-`nv-ziglib-template` is a language-agnostic template for building projects with automated versioning, testing, and GitHub Action powered CI/CD workflows. Customize for any language by editing `justfile` recipes.
+`nv-ziglib-template` is a production-ready Zig project template with automated versioning, multi-platform binary distribution, and GitHub Actions CI/CD. Build CLI tools or libraries with cross-compilation support for Linux, macOS, and Windows.
 
-GCP-forward by default (uses GCP Artifact Registry), but easily modified for npm, PyPI, Docker Hub, etc.
+The template integrates Zig's native build system (build.zig) with a portable bash framework for CI/CD automation. Multi-platform binaries are published to GitHub Releases by default, with optional GCP Artifact Registry support for enterprise distribution.
 
 ## How It Works
 
-The template follows a simple flow:
+The template integrates Zig with portable automation:
 
 ```
 ┌────────┐    ┌──────┐    ┌─────────┐    ┌────────────────┐
-│ direnv │ -> │ just │ -> │ scripts │ -> │ GitHub Actions │
+│ direnv │ -> │ just │ -> │   Zig   │ -> │ GitHub Actions │
 └────────┘    └───┬──┘    └─────────┘    └────────────────┘
                   │
                   v
             ┌───────────┐
-            │  Claude   │
-            │ (optional)│
+            │  scripts  │
             └───────────┘
 ```
 
@@ -26,9 +25,9 @@ When you run a command like `just build`, here's what happens:
 
 1. direnv automatically loads `.envrc` to populate your environment with PROJECT, VERSION, and registry configuration
 2. just executes the command you specified (`just build`, `just test`, `just publish`) using recipes defined in the `justfile`
-3. The justfile recipes call bash scripts in `scripts/` for language-agnostic automation (`setup.sh`, `scaffold.sh`, `upversion.sh`) that you can override or extend
-4. GitHub Actions workflows trigger on PRs and merges, calling your just commands to run tests and publish releases
-5. Claude commands provide optional LLM assistance for complex workflows like template migrations, project adaptations, and documenting architectural decisions
+3. The justfile recipes call Zig commands (`zig build`, `zig fmt`, `zig build test`) for all Zig-specific operations
+4. The justfile also calls bash scripts in `scripts/` for cross-language automation (`setup.sh`, `scaffold.sh`, `upversion.sh`)
+5. GitHub Actions workflows trigger on PRs and merges, calling your just commands to run tests and publish releases
 
 ## Design / Basic Usage
 
@@ -36,38 +35,38 @@ When you run a command like `just build`, here's what happens:
 
 For detailed setup instructions, see the [User Guide](user-guide.md#quick-start).
 
-After scaffolding a project from this template, run `/adapt` to customize it for your language (Python, Node.js, Go, Docker). Then interact with your project via `just` commands:
+After scaffolding a project from this template, you have a working Zig project ready to build. Interact with your project via `just` commands:
 
 ```bash
-just install    # Install project dependencies
-just build      # Build for development
-just test       # Run tests
-just publish    # Build prod + publish to registry
+just install    # Fetch Zig dependencies
+just build      # Build with Zig (debug mode)
+just test       # Run Zig tests
+just format     # Format code with zig fmt
+just publish    # Build all platforms + publish binaries
 ```
 
 To customize CI/CD behavior, edit scripts in the `scripts/` directory rather than modifying workflows directly.
 
-### Customization Points
+### Zig Integration
 
-The `justfile` is where you define language-specific commands. Replace the TODO placeholders with your language's build/test/publish commands:
+The template is fully configured for Zig 0.15.1:
 
-```just
-build:
-    npm run build  # or python -m build, go build, cargo build
+build.zig:
+- Defines build configuration (library, executable, or both)
+- Configures cross-compilation targets
+- Sets up test suite
 
-test: build
-    npm test  # or pytest, go test ./..., cargo test
+build.zig.zon:
+- Declares project metadata (name, version)
+- Manages dependencies (fetched from GitHub tarballs)
 
-publish: test build-prod
-    npm publish  # or twine upload, gcloud artifacts upload
-```
+justfile:
+- `build` → `zig build`
+- `test` → `zig build test --summary all`
+- `format` → `zig fmt src/ build.zig`
+- `build-platform` → `zig build -Dtarget=<target>`
 
-Scripts in `scripts/` provide hooks for overriding CI/CD behavior:
-- Modify `scripts/upversion.sh` to change versioning logic
-- Extend `scripts/setup.sh` to add custom dependencies
-- Keep `scripts/scaffold.sh` as-is for template initialization
-
-The key principle: customize just recipes and scripts, never edit workflows directly. This separation keeps your CI/CD logic portable and testable locally, while workflows remain stable across template upgrades.
+The key principle: Zig handles all language-specific operations, justfile provides the interface, bash scripts handle cross-language concerns (versioning, scaffolding, setup). This separation keeps Zig idioms pure while maintaining portable automation.
 
 ## Project Structure
 
@@ -162,23 +161,28 @@ Claude commands provide LLM-assisted workflows for complex tasks. For complete c
 
 The `Dockerfile` uses a multi-stage build to support both minimal runtime environments and full development environments from a single file:
 
-**Base Stage** (`target: base`):
+#### Base Stage (`target: base`)
+
 - Used by docker-compose for `just docker-run` and `just docker-test`
-- Installs only essential dependencies: bash, just, direnv
-- Fast build time (~1-2 minutes)
+- Installs essential dependencies: bash, just, direnv, Zig 0.15.1
+- Zig installed via setup.sh for consistency with local development
+- Fast build time (~3-5 minutes including Zig download)
 - Minimal image size for quick iteration
 
-**Dev Stage** (`target: dev`):
+#### Dev Stage (`target: dev`)
+
 - Used by VS Code DevContainers
 - Builds on top of base stage
 - Adds development tools: docker, node/npx, gcloud, shellcheck, shfmt, claude
 - Adds template testing tools: bats-core
-- Slower build (~10 minutes), but cached after first build
+- ZLS (Zig Language Server) installed via VS Code Zig extension
+- Slower build (~12 minutes), but cached after first build
 
 Configuration:
 - `docker-compose.yml` services specify `target: base` for fast builds
-- `.devcontainer/devcontainer.json` specifies `target: dev` for full environment
+- `.devcontainer/devcontainer.json` specifies `target: dev` for full Zig development
 - Both share the same base layers, maximizing Docker layer cache efficiency
+- Zig cache directories (.zig-cache, ~/.cache/zig) preserved across builds
 
 ### Component: docker-compose.yml
 
@@ -191,7 +195,7 @@ Provides containerized services for running and testing without installing depen
 
 ### Component: .devcontainer/
 
-The `.devcontainer/` directory provides VS Code Dev Containers configuration for consistent development environments across teams. The devcontainer uses the root-level `Dockerfile` with `target: dev` to build a full development environment.
+The `.devcontainer/` directory provides VS Code Dev Containers configuration for consistent Zig development environments across teams. The devcontainer uses the root-level `Dockerfile` with `target: dev` to build a full development environment.
 
 Features:
 - `git:1` - Git installed from source (credentials auto-shared by VS Code via SSH agent forwarding)
@@ -204,10 +208,17 @@ Credential Mounting:
 - gcloud requires manual `gcloud auth login` inside container (credentials persist via Docker volumes)
 
 VS Code Extensions:
+- `ziglang.vscode-zig` - Zig language support (syntax highlighting, autocomplete, ZLS integration)
 - `mkhl.direnv` - direnv support
 - `skellock.just` and `nefrob.vscode-just-syntax` - justfile syntax highlighting
 - `timonwong.shellcheck` and `foxundermoon.shell-format` - Shell script linting and formatting
 - `ms-azuretools.vscode-docker` - Docker support
+
+Zig Development:
+- Zig 0.15.1 pre-installed in dev stage
+- ZLS (Zig Language Server) automatically installed by vscode-zig extension
+- Provides: autocomplete, go-to-definition, inline diagnostics, formatting on save
+- Zig cache (.zig-cache, ~/.cache/zig) preserved via Docker volumes
 
 Cross-Platform Considerations:
 - Works on macOS, Linux, and Windows (via Docker Desktop or WSL)
@@ -229,21 +240,30 @@ This approach makes dependencies explicit and context-aware. Developers get lint
 
 ### Publishing
 
-The template defaults to GCP Artifact Registry but is easily customized for other registries. Just edit the `publish` recipe:
+The template publishes multi-platform Zig binaries to two destinations:
 
-```just
-# npm
-publish: test build-prod
-    npm publish
+GitHub Releases (Primary - Always Active):
+- Multi-platform binaries automatically uploaded to GitHub Releases
+- No configuration needed (uses GITHUB_TOKEN)
+- Supports: Linux (x86_64, aarch64), macOS (x86_64, aarch64), Windows (x86_64)
+- Binary naming: `project-os-arch` (e.g., `nv-ziglib-template-linux-x86_64`)
+- Users install via `install.sh` or manual download
 
-# PyPI
-publish: test build-prod
-    twine upload dist/*
+GCP Artifact Registry (Optional - Enterprise):
+- Individual platform binaries uploaded to GCP generic repository
+- Only runs if GCP_SA_KEY secret is configured
+- Same binaries as GitHub Releases, different distribution channel
+- Useful for internal/enterprise distribution
 
-# Docker
-publish: test build-prod
-    docker push myimage:{{VERSION}}
-```
+Publishing flow:
+1. `just build-all-platforms` → Builds 5 platform binaries to zig-out/bin/
+2. GitHub Release step → Uploads zig-out/bin/* to release
+3. `just publish` → Uploads individual binaries to GCP (if configured)
+
+Version management:
+- version.txt is the canonical version source (read by build system)
+- semantic-release updates version.txt on releases
+- Zig doesn't mandate a specific version location, so we use version.txt for consistency
 
 ### CI/CD Secrets
 
@@ -278,23 +298,51 @@ All scripts use `set -euo pipefail` for fail-fast behavior, ensuring errors don'
 
 ### Testing
 
-For user projects, customize `just test` for your language (pytest for Python, npm test for Node.js, go test for Go, cargo test for Rust).
+For Zig projects scaffolded from this template:
 
-For template development, use bats-core for bash script testing:
+Zig tests live inline with source code:
+```zig
+// src/stringutils.zig
+pub fn reverse(s: []const u8) []u8 {
+    // implementation
+}
+
+test "reverse" {
+    const result = reverse("hello");
+    try std.testing.expectEqualStrings("olleh", result);
+}
+```
+
+Run tests:
+```bash
+just test              # Runs: zig build test --summary all
+```
+
+For template development (maintaining this template itself), use bats-core for bash script testing:
 ```bash
 just setup --template  # Install bats
 just test-template     # Run template tests
 ```
 
-Tests cover scaffold.sh validation, .envrc handling, case variant replacements, and template file cleanup.
+Template tests cover scaffold.sh validation, .envrc handling, case variant replacements, and template file cleanup.
 
 ## References
 
+Zig Resources:
+- [Zig Language](https://ziglang.org/)
+- [Zig Build System](https://ziglang.org/learn/build-system/)
+- [Zig Package Manager](https://github.com/ziglang/zig/wiki/Package-Manager)
+- [Zig Standard Library](https://ziglang.org/documentation/master/std/)
+- [ZLS (Zig Language Server)](https://github.com/zigtools/zls)
+
+Development Tools:
 - [just command runner](https://github.com/casey/just)
 - [direnv environment management](https://direnv.net/)
 - [semantic-release](https://semantic-release.gitbook.io/)
-- [bats-core bash testing](https://bats-core.readthedocs.io/)
-- [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html)
 - [Conventional Commits](https://www.conventionalcommits.org/)
+
+Infrastructure:
 - [GitHub Actions](https://docs.github.com/en/actions)
 - [GCP Artifact Registry](https://cloud.google.com/artifact-registry/docs)
+- [bats-core bash testing](https://bats-core.readthedocs.io/)
+- [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html)

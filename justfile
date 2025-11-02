@@ -104,19 +104,13 @@ format-check *PATHS:
     @zig fmt --check src/ build.zig {{PATHS}}
     @echo -e "{{SUCCESS}}Format check passed{{NORMAL}}"
 
-# Lint code
+# Lint code (alias for build)
 [group('utils')]
-lint *PATHS:
-    @echo -e "{{INFO}}Linting Zig code (building with full warnings){{NORMAL}}"
-    @zig build
-    @echo -e "{{SUCCESS}}Lint check passed{{NORMAL}}"
+lint: build
 
-# Lint and auto-fix issues
+# Auto-fix formatting issues (alias for format)
 [group('utils')]
-lint-fix *PATHS:
-    @echo -e "{{INFO}}Auto-fixing Zig code (formatting){{NORMAL}}"
-    @zig fmt src/ build.zig {{PATHS}}
-    @echo -e "{{SUCCESS}}Auto-fix complete{{NORMAL}}"
+lint-fix: format
 
 # Upgrade to newer template version (requires Claude Code)
 [group('utils')]
@@ -248,6 +242,20 @@ publish:
     echo -e "{{SUCCESS}}Published $PROJECT@$VERSION to GCP{{NORMAL}}"
 
 # ==============================================================================
+# VS CODE
+# ==============================================================================
+
+# Hide non-essential files in VS Code
+[group('vscode')]
+hide:
+    @bash scripts/toggle-files.sh hide
+
+# Show all files in VS Code
+[group('vscode')]
+show:
+    @bash scripts/toggle-files.sh show
+
+# ==============================================================================
 # TEMPLATE
 # ==============================================================================
 
@@ -267,17 +275,3 @@ test-template:
         echo -e "{{ERROR}}bats not installed. Run: just setup --template{{NORMAL}}";
         exit 1;
     fi
-
-# ==============================================================================
-# VS CODE
-# ==============================================================================
-
-# Hide non-essential files in VS Code
-[group('vscode')]
-hide:
-    @bash scripts/toggle-files.sh hide
-
-# Show all files in VS Code
-[group('vscode')]
-show:
-    @bash scripts/toggle-files.sh show

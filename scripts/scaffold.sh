@@ -295,14 +295,24 @@ PROJECT_PASCAL=$(words_to_pascal "$PROJECT_WORDS")
 PROJECT_CAMEL=$(words_to_camel "$PROJECT_WORDS")
 PROJECT_FLAT=$(words_to_flat "$PROJECT_WORDS")
 
-# Replace in all text files (excluding binary files and .git)
-find "$DEST_DIR" -type f ! -path "*/.git/*" ! -path "$DEST_DIR/.nv/*" 2>/dev/null | while IFS= read -r file; do
-    # Replace all variants (order matters: longer strings first to avoid partial replacements)
-    sed_inplace "s/${TEMPLATE_PASCAL}/${PROJECT_PASCAL}/g" "$file" || true
-    sed_inplace "s/${TEMPLATE_CAMEL}/${PROJECT_CAMEL}/g" "$file" || true
-    sed_inplace "s/${TEMPLATE_SNAKE}/${PROJECT_SNAKE}/g" "$file" || true
-    sed_inplace "s/${TEMPLATE_KEBAB}/${PROJECT_KEBAB}/g" "$file" || true
-    sed_inplace "s/${TEMPLATE_FLAT}/${PROJECT_FLAT}/g" "$file" || true
+# Replace in all text files (excluding binary files, .git, and build artifacts)
+find "$DEST_DIR" -type f \
+    ! -path "*/.git/*" \
+    ! -path "$DEST_DIR/.nv/*" \
+    ! -path "*/.zig-cache/*" \
+    ! -path "*/zig-cache/*" \
+    ! -path "*/zig-out/*" \
+    ! -path "*/node_modules/*" \
+    2>/dev/null | while IFS= read -r file; do
+    # Skip binary files (check for null bytes)
+    if file "$file" | grep -q "text\|JSON\|empty"; then
+        # Replace all variants (order matters: longer strings first to avoid partial replacements)
+        sed_inplace "s/${TEMPLATE_PASCAL}/${PROJECT_PASCAL}/g" "$file" || true
+        sed_inplace "s/${TEMPLATE_CAMEL}/${PROJECT_CAMEL}/g" "$file" || true
+        sed_inplace "s/${TEMPLATE_SNAKE}/${PROJECT_SNAKE}/g" "$file" || true
+        sed_inplace "s/${TEMPLATE_KEBAB}/${PROJECT_KEBAB}/g" "$file" || true
+        sed_inplace "s/${TEMPLATE_FLAT}/${PROJECT_FLAT}/g" "$file" || true
+    fi
 done
 
 log_success "Replaced template name with project name"
@@ -323,6 +333,13 @@ cp "$ENVRC_TEMPLATE" "$ENVRC_FILE"
 
 # Create version.txt with initial version
 echo "0.1.0" > "$DEST_DIR/version.txt"
+
+# Update build.zig.zon version to match and remove fingerprint
+if [ -f "$DEST_DIR/build.zig.zon" ]; then
+    sed_inplace 's/\.version = "[^"]*"/.version = "0.1.0"/' "$DEST_DIR/build.zig.zon"
+    # Remove fingerprint line - Zig will auto-generate correct one for new project
+    sed_inplace '/\.fingerprint = /d' "$DEST_DIR/build.zig.zon"
+fi
 
 # Update PROJECT name
 sed_inplace "s/__PROJECT_NAME__/$PROJECT_NAME/" "$ENVRC_FILE"
@@ -352,6 +369,38 @@ if ! grep -q "NV_TEMPLATE" "$ENVRC_FILE"; then
 fi
 
 log_success "Created and configured .envrc from template"
+
+# UPDATE INSTALL.SH ------------------------------------------------------------
+if [ -f "$DEST_DIR/install.sh" ]; then
+    log_info "Configuring install.sh..."
+
+    # Try to get GitHub repo from git remote (if initialized)
+    if git -C "$DEST_DIR" rev-parse --git-dir > /dev/null 2>&1; then
+        GITHUB_REPO=$(git -C "$DEST_DIR" remote get-url origin 2>/dev/null | sed -E 's#https://github.com/([^/]+/[^/]+)(\.git)?#\1#' || echo "")
+    else
+        GITHUB_REPO=""
+    fi
+
+    # If no git remote, prompt user or use placeholder
+    if [ -z "$GITHUB_REPO" ]; then
+        if [ "$NON_INTERACTIVE" = false ]; then
+            read -r -p "GitHub repository (owner/repo) [leave empty to set later]: " GITHUB_REPO
+        fi
+
+        if [ -z "$GITHUB_REPO" ]; then
+            GITHUB_REPO="YOUR_GITHUB_USER/YOUR_REPO"
+            log_warning "install.sh configured with placeholder repo. Update REPO variable before publishing."
+        fi
+    fi
+
+    # Replace REPO placeholder
+    sed_inplace "s#REPO=\"USER/REPO\"#REPO=\"$GITHUB_REPO\"#" "$DEST_DIR/install.sh"
+
+    # Replace BINARY_NAME placeholder with project name (kebab-case is standard for binaries)
+    sed_inplace "s#BINARY_NAME=\"${TEMPLATE_KEBAB}\"#BINARY_NAME=\"${PROJECT_KEBAB}\"#" "$DEST_DIR/install.sh"
+
+    log_success "Configured install.sh (repo: $GITHUB_REPO, binary: $PROJECT_KEBAB)"
+fi
 
 # CLEAN UP .CLAUDE/ DIRECTORY --------------------------------------------------
 if [ "$KEEP_CLAUDE" = false ]; then

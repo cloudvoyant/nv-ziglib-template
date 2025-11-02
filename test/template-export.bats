@@ -58,7 +58,7 @@ teardown() {
     [ -f "$EXTRACT_DIR/.claude/commands/docs.md" ]
 
     # User-facing Claude config files should be included
-    [ -f "$EXTRACT_DIR/.claude/instructions.md" ]
+    [ -f "$EXTRACT_DIR/.claude/CLAUDE.md" ]
     [ -f "$EXTRACT_DIR/.claude/style.md" ]
     [ -f "$EXTRACT_DIR/.claude/workflows.md" ]
 

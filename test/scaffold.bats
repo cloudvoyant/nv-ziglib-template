@@ -103,7 +103,7 @@ teardown() {
     # Adds template tracking (reads from source .envrc)
     run grep "NV_TEMPLATE=" "$DEST_DIR/.envrc"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"nv-lib-template"* ]]
+    [[ "$output" == *"nv-ziglib-template"* ]]
 
     run grep "NV_TEMPLATE_VERSION=" "$DEST_DIR/.envrc"
     [ "$status" -eq 0 ]
@@ -192,7 +192,7 @@ teardown() {
     [ "$status" -eq 0 ]
 
     # Should contain template name
-    run grep "nv-lib-template" "$DEST_DIR/README.md"
+    run grep "nv-ziglib-template" "$DEST_DIR/README.md"
     [ "$status" -eq 0 ]
 
     # Should contain platform version
@@ -277,33 +277,38 @@ teardown() {
     [ ! -d "$DEST_DIR/.nv/.scaffold-backup" ]
 }
 
-@test "replaces template name in all case variants across all files" {
+@test "replaces template name in Zig files (build.zig, build.zig.zon)" {
     bash ./scripts/scaffold.sh \
         --src . \
         --dest ../.. \
         --non-interactive \
         --project my_awesome_project
 
-    # Check PascalCase replacement in src files
-    run grep "class MyAwesomeProject" "$DEST_DIR/src/sample-code.txt"
+    # Check build.zig uses snake_case for module name
+    run grep "my_awesome_project" "$DEST_DIR/build.zig"
     [ "$status" -eq 0 ]
 
-    run grep "MyAwesomeProjectService" "$DEST_DIR/src/sample-code.txt"
+    # Check build.zig uses kebab-case for executable name
+    run grep "my-awesome-project" "$DEST_DIR/build.zig"
     [ "$status" -eq 0 ]
 
-    # Check camelCase replacement in src files
-    run grep "myAwesomeProjectConfig" "$DEST_DIR/src/sample-code.txt"
+    # Check build.zig.zon uses snake_case identifier
+    run grep ".name = .my_awesome_project" "$DEST_DIR/build.zig.zon"
     [ "$status" -eq 0 ]
 
-    run grep "myAwesomeProjectHelper" "$DEST_DIR/src/sample-code.txt"
-    [ "$status" -eq 0 ]
+    # Verify template name no longer appears in build.zig
+    run grep "nv_ziglib_template" "$DEST_DIR/build.zig"
+    [ "$status" -eq 1 ]
 
-    # Check README contains project name
-    run grep "my_awesome_project" "$DEST_DIR/README.md"
-    [ "$status" -eq 0 ]
+    run grep "nv-ziglib-template" "$DEST_DIR/build.zig"
+    [ "$status" -eq 1 ]
+
+    # Verify template name no longer appears in build.zig.zon
+    run grep "nv_ziglib_template" "$DEST_DIR/build.zig.zon"
+    [ "$status" -eq 1 ]
 
     # Verify template name no longer appears in .envrc
-    run grep -r "export PROJECT=nv-lib-template" "$DEST_DIR" --exclude-dir=.nv
+    run grep "export PROJECT=nv-ziglib-template" "$DEST_DIR/.envrc"
     [ "$status" -eq 1 ]
 }
 
@@ -349,6 +354,77 @@ teardown() {
 
     # TEMPLATE section (kept in source, removed when scaffolding)
     run grep -q "# TEMPLATE" justfile
+    [ "$status" -eq 0 ]
+}
+
+@test "updates install.sh with project name and repo" {
+    bash ./scripts/scaffold.sh \
+        --src . \
+        --dest ../.. \
+        --non-interactive \
+        --project my-cli-tool
+
+    [ -f "$DEST_DIR/install.sh" ]
+
+    # Should replace BINARY_NAME with project name (kebab-case)
+    run grep 'BINARY_NAME="my-cli-tool"' "$DEST_DIR/install.sh"
+    [ "$status" -eq 0 ]
+
+    # Should NOT contain template binary name
+    run grep 'BINARY_NAME="nv-ziglib-template"' "$DEST_DIR/install.sh"
+    [ "$status" -eq 1 ]
+
+    # Should have REPO configured (either placeholder or actual)
+    run grep 'REPO=' "$DEST_DIR/install.sh"
+    [ "$status" -eq 0 ]
+
+    # Should NOT contain USER/REPO placeholder
+    run grep 'REPO="USER/REPO"' "$DEST_DIR/install.sh"
+    [ "$status" -eq 1 ]
+}
+
+@test "updates build.zig.zon version to 0.1.0" {
+    bash ./scripts/scaffold.sh \
+        --src . \
+        --dest ../.. \
+        --non-interactive \
+        --project testproject
+
+    [ -f "$DEST_DIR/build.zig.zon" ]
+
+    # Should have version 0.1.0 (synced with version.txt)
+    run grep '.version = "0.1.0"' "$DEST_DIR/build.zig.zon"
+    [ "$status" -eq 0 ]
+}
+
+@test "scaffolded Zig project has correct structure" {
+    bash ./scripts/scaffold.sh \
+        --src . \
+        --dest ../.. \
+        --non-interactive \
+        --project myzigtool
+
+    cd "$DEST_DIR"
+
+    # Should have Zig files
+    [ -f "build.zig" ]
+    [ -f "build.zig.zon" ]
+    [ -d "src" ]
+
+    # build.zig.zon should have project name
+    run grep ".name = .myzigtool" build.zig.zon
+    [ "$status" -eq 0 ]
+
+    # build.zig.zon should have correct version
+    run grep '.version = "0.1.0"' build.zig.zon
+    [ "$status" -eq 0 ]
+
+    # build.zig.zon should NOT have old fingerprint (removed during scaffolding)
+    run grep ".fingerprint = 0xa0ecdb504426b8a4" build.zig.zon
+    [ "$status" -eq 1 ]
+
+    # build.zig should have project name in module
+    run grep "myzigtool" build.zig
     [ "$status" -eq 0 ]
 }
 

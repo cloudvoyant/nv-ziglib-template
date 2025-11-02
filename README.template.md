@@ -12,24 +12,26 @@
 .
 ├── docs/          # Documentation
 ├── scripts/       # Utility scripts and CI/CD hooks
-└── .../           # [ SPECIFY PROJECT SPECIFIC DIRS ]
-└── justfile       # Build recipes
-└── .envrc         # Key env vars and shell config
+├── src/           # Zig source code
+├── build.zig      # Zig build configuration
+├── build.zig.zon  # Zig package manifest
+├── justfile       # Build recipes
+├── .envrc         # Key env vars and shell config
 └── version.txt    # Project version
-└── ...            # [ SPECIFY PROJECT SPECIFIC FILES ]
 ```
 
 ## Prerequisites
 
 - bash 3.2+
 - just
-- [List other required tools and dependencies]
+- Zig 0.15.1 or later
+- [List other project-specific dependencies]
 
 ## Setup
 
-Run `just setup` or `./scripts/setup.sh` to install remaining dependencies (just, direnv).
+Run `just setup` or `./scripts/setup.sh` to install remaining dependencies (just, direnv, Zig).
 
-Optional: `just setup --dev` for development tools, `just setup --template` for template testing.
+Optional: `just setup --dev` for development tools (ZLS language server), `just setup --template` for template testing.
 
 ## Quick Start
 
@@ -92,27 +94,35 @@ This will publish a pre-release package version.
 
 ### Registry Configuration
 
-Publishing to artifact registries is optional. This project defaults to GCP Artifact Registry but can be configured for npm, PyPI, Docker Hub, etc.
+Publishing is configured for both GitHub Releases (binaries) and optionally GCP Artifact Registry.
 
-Configure in `.envrc`:
+**GitHub Releases** (default):
+- Multi-platform binaries are automatically built and uploaded to GitHub Releases
+- Users can install with: `curl -sSL https://github.com/YOUR_ORG/{{PROJECT_NAME}}/raw/main/install.sh | bash`
 
-- **GCP Artifact Registry** (default): Set `GCP_REGISTRY_PROJECT_ID`, `GCP_REGISTRY_REGION`, `GCP_REGISTRY_NAME`
-- **Other registries**: Update the `publish` recipe in `justfile` and add registry-specific variables to `.envrc`
+**GCP Artifact Registry** (optional):
+- Configure in `.envrc`: Set `GCP_REGISTRY_PROJECT_ID`, `GCP_REGISTRY_REGION`, `GCP_REGISTRY_NAME`
+- Add `GCP_SA_KEY` secret to GitHub repository for automated publishing
 
-Examples:
+**Using as a library:**
+- Other Zig projects can import this as a dependency:
 
-```just
-# npm
-publish: test build-prod
-    npm publish
+```bash
+# Use a specific version (recommended for production)
+zig fetch --save "git+https://github.com/YOUR_ORG/{{PROJECT_NAME}}#vX.Y.Z"
 
-# PyPI
-publish: test build-prod
-    twine upload dist/*
+# Or track the latest changes on main
+zig fetch --save "git+https://github.com/YOUR_ORG/{{PROJECT_NAME}}#main"
+```
 
-# Docker
-publish: test build-prod
-    docker push myimage:{{VERSION}}
+Then in your `build.zig`:
+```zig
+const {{PROJECT_NAME}} = b.dependency("{{PROJECT_NAME}}", .{
+    .target = target,
+    .optimize = optimize,
+});
+
+exe.root_module.addImport("{{PROJECT_NAME}}", {{PROJECT_NAME}}.module("{{PROJECT_NAME}}"));
 ```
 
 See the [{{TEMPLATE_NAME}} User Guide](https://github.com/your-org/{{TEMPLATE_NAME}}/blob/main/docs/user-guide.md) for detailed configuration instructions.
@@ -126,11 +136,12 @@ To learn more about using this template, read the docs:
 
 ## References
 
+- [Zig Language](https://ziglang.org/)
+- [Zig Build System](https://ziglang.org/learn/build-system/)
+- [Zig Package Manager](https://github.com/ziglang/zig/wiki/Package-Manager)
+- [ZLS (Zig Language Server)](https://github.com/zigtools/zls)
 - [just command runner](https://github.com/casey/just)
 - [direnv environment management](https://direnv.net/)
 - [semantic-release](https://semantic-release.gitbook.io/)
-- [bats-core bash testing](https://bats-core.readthedocs.io/)
-- [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html)
 - [Conventional Commits](https://www.conventionalcommits.org/)
 - [GitHub Actions](https://docs.github.com/en/actions)
-- [GCP Artifact Registry](https://cloud.google.com/artifact-registry/docs)

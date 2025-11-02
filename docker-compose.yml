@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: base  # Use minimal base stage (fast build)
-    container_name: nv-lib-template-runner
+    container_name: nv-ziglib-template-runner
     volumes:
       - .:/workspace
     working_dir: /workspace
@@ -21,7 +21,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: base  # Use minimal base stage (fast build)
-    container_name: nv-lib-template-tester
+    container_name: nv-ziglib-template-tester
     volumes:
       - .:/workspace
     working_dir: /workspace

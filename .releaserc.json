@@ -31,13 +31,13 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "echo ${nextRelease.version} > version.txt"
+        "prepareCmd": "echo ${nextRelease.version} > version.txt && sed -i.bak 's/\\.version = \"[^\"]*\"/\\.version = \"${nextRelease.version}\"/' build.zig.zon && rm -f build.zig.zon.bak"
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "version.txt"],
+        "assets": ["CHANGELOG.md", "version.txt", "build.zig.zon"],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],

@@ -2,33 +2,49 @@
 
 ![Version](https://img.shields.io/github/v/release/cloudvoyant/nv-ziglib-template?label=version)
 ![Release](https://github.com/cloudvoyant/nv-ziglib-template/workflows/Release/badge.svg)
+![Zig](https://img.shields.io/badge/zig-0.15.1-orange)
 
-`nv-ziglib-template` is a language-agnostic template for building projects with automated versioning, testing, and GitHub Action powered CI/CD workflows. It uses GCP Artifact Registry for publishing generic packages by default, but can be easily adapted for npm, PyPI, NuGet, CodeArtifact, etc.
+A production-ready Zig project template with automated versioning, multi-platform binary distribution, and GitHub Actions CI/CD. Build libraries or CLI tools with cross-compilation support for Linux, macOS, and Windows.
 
 ## Features
 
-Here's what this template gives you off the bat:
+### Zig-Specific Features
 
-- A language-agnostic self-documenting command interface via `just`. Keep all your project commands organized in one file!
-- Auto-load environment variables and configure shell environment with `direnv` - share project scoped shell configurations and simplify scripting and CLI tool usage without needing to pass around flags and inline environment variables.
-- CI/CD with GitHub Actions - run test on MR commits, tag and release on merges to main.
-- Easy CI/CD customization with language-agnostic bash scripting - No need to get too deep into GitHub Actions for customization. Modify the publish recipe, set GitHub Secrets and you're good to go.
-- Trunk based development and automated versioning with conventional commits - semantic-release will handle version bumping for you! Work on feature branches and merge to main for bumps.
-- GCP Artifact Registry publishing (easily modified for other registries)
-- Cross-platform (macOS, Linux, Windows via WSL) - use the setup script to install dependencies, or alternately develop with Dev Containers or run tasks via Docker
+- Multi-platform binary builds: Automatically cross-compile for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64)
+- Dual-use template: Build CLI tools (with install script) or libraries (via build.zig.zon)
+- Zig 0.15.1 with automatic dependency fetching via build.zig.zon
+- Code formatting with `zig fmt` integrated into CI
+- Example library with comprehensive tests demonstrating Zig patterns
+
+### Development Experience
+
+- Self-documenting command interface via `just` - all build/test/release commands in one place
+- Auto-load environment with `direnv` for seamless shell integration
+- Dev Containers with Zig + ZLS (language server) pre-configured
+- Docker support for building without local Zig installation
+- Hot reload workflow: `just run` rebuilds and runs on save
+
+### CI/CD & Publishing
+
+- Automated versioning with conventional commits (semantic-release)
+- Multi-platform binaries published to GitHub Releases
+- Optional GCP Artifact Registry publishing for enterprise distribution
+- Install script for easy CLI tool installation: `curl -sSL https://raw.githubusercontent.com/cloudvoyant/nv-ziglib-template/main/install.sh | bash`
+- Tests run on every PR, releases on merge to main
 
 ## Requirements
 
 - bash 3.2+
-- just
+- Zig 0.15.1
+- just (command runner)
 
-Run `just setup` to install remaining dependencies (just, direnv).
+Run `just setup` to install all dependencies automatically (Zig, just, direnv).
 
 Optional: `just setup --dev` for development tools, `just setup --template` for template testing.
 
 ## Quick Start
 
-Scaffold a new project:
+Create a new Zig project from this template:
 
 ```bash
 # Option 1: Nedavellir CLI (automated)
@@ -41,15 +57,16 @@ cd <your-new-repo>
 bash scripts/scaffold.sh --project your-project-name
 ```
 
-Install dependencies and adapt the template for your needs:
+Setup and build your project:
 
 ```bash
-just setup              # Required: bash, just, direnv
-just scaffold           # Scaffold project - apply project name and reset version
-claude /adapt           # Guided customization for your language / package manager
+just setup              # Install dependencies: Zig 0.15.1, just, direnv
+just build              # Build with Zig
+just test               # Run Zig tests
+just run                # Run your application
 ```
 
-Type `just` to see all the tasks at your disposal:
+View all available commands:
 
 ```bash
 ❯ just
@@ -61,25 +78,81 @@ Available recipes:
     run                  # Run project locally
     test                 # Run tests
     clean                # Clean build artifacts
+    format               # Format Zig code
+    lint                 # Lint Zig code
 
 [ OUTPUT TRUNCATED ]
 ```
 
-Build run and test with `just`. The template will show TODO messages in console prior to adapting.
+Example build and test output:
 
 ```bash
-❯ just run
-TODO: Implement build for nv-lib-template@1.9.1
-TODO: Implement run
+❯ just build
+Building nv-ziglib-template@1.1.0
+Build Summary: 3/3 steps succeeded
+└─ install
+   └─ install nv-ziglib-template
 
 ❯ just test
-TODO: Implement build for nv-lib-template@1.9.1
-TODO: Implement test
+Running tests
+
+Build Summary: 3/3 steps succeeded; 7/7 tests passed
+test success
++- run test 7 passed 1ms MaxRSS:1M
+   +- compile test Debug native cached 45ms MaxRSS:30M
 ```
 
-Note how just runs the necessary dependencies for a task on it's own!
+Commit using conventional commits and push to trigger automated releases:
 
-Commit using conventional commits (`feat:`, `fix:`, `docs:`). Merge/push to main and CI/CD will run automatically bumping your project version and publishing a package.
+```bash
+git commit -m "feat: add new string utility"
+git push origin main
+# CI automatically: runs tests → creates release → publishes binaries
+```
+
+## Using This Template
+
+This template is designed for Zig projects and supports two primary use cases:
+
+### 1. CLI Tools
+Build command-line applications with automatic multi-platform binary distribution.
+
+Install pre-built binaries:
+```bash
+curl -sSL https://raw.githubusercontent.com/cloudvoyant/nv-ziglib-template/main/install.sh | bash
+```
+
+### 2. Libraries
+Create reusable Zig libraries that other projects can import.
+
+Add as a dependency to your Zig project:
+```bash
+# Use a specific version (recommended for production)
+zig fetch --save "git+https://github.com/cloudvoyant/nv-ziglib-template#v1.1.0"
+
+# Or track the latest changes on main
+zig fetch --save "git+https://github.com/cloudvoyant/nv-ziglib-template#main"
+```
+
+Then in your `build.zig`:
+```zig
+const nv_ziglib_template = b.dependency("nv_ziglib_template", .{
+    .target = target,
+    .optimize = optimize,
+});
+
+exe.root_module.addImport("nv-ziglib-template", nv_ziglib_template.module("nv_ziglib_template"));
+```
+
+### After Scaffolding
+
+Customize the example code in `src/` to build your:
+
+- Command-line utilities with argument parsing
+- Reusable libraries with well-tested APIs
+- Mixed projects (library with CLI frontend)
+
+The template handles versioning, testing, formatting, and multi-platform releases automatically. Just write Zig code and use conventional commits.
 
 ## Documentation
 
@@ -90,16 +163,27 @@ To learn more about using this template, read the docs:
 
 ## TODO
 
-- [ ] Pre-release publishing
-- [ ] Template docs improvements
+- [ ] Pre-release publishing support
 
 ## References
+
+Zig Resources:
+
+- [Zig Language](https://ziglang.org/)
+- [Zig Build System](https://ziglang.org/learn/build-system/)
+- [Zig Package Manager](https://github.com/ziglang/zig/wiki/Package-Manager)
+- [Zig Standard Library](https://ziglang.org/documentation/master/std/)
+- [ZLS (Zig Language Server)](https://github.com/zigtools/zls)
+
+Development Tools:
 
 - [just command runner](https://github.com/casey/just)
 - [direnv environment management](https://direnv.net/)
 - [semantic-release](https://semantic-release.gitbook.io/)
-- [bats-core bash testing](https://bats-core.readthedocs.io/)
-- [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html)
 - [Conventional Commits](https://www.conventionalcommits.org/)
+
+Infrastructure:
+
 - [GitHub Actions](https://docs.github.com/en/actions)
 - [GCP Artifact Registry](https://cloud.google.com/artifact-registry/docs)
+- [bats-core bash testing](https://bats-core.readthedocs.io/)
