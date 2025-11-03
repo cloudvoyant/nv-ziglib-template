@@ -1,3 +1,9 @@
+## [1.6.2](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.6.1...v1.6.2) (2025-11-03)
+
+### Bug Fixes
+
+* correct upgrade command to reference Zig template ([df34a22](https://github.com/cloudvoyant/nv-ziglib-template/commit/df34a22dd494d7ebcd79df81b6ecf6850060937f))
+
 ## [1.6.1](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.6.0...v1.6.1) (2025-11-03)
 
 ### Bug Fixes
