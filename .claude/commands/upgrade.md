@@ -1,4 +1,4 @@
-Help me migrate this project to the latest nv-lib-template version using a spec-driven approach.
+Help me migrate this project to the latest nv-ziglib-template version using a spec-driven approach.
 
 ## Overview
 
@@ -33,7 +33,7 @@ mkdir -p .nv
 if [ -d ".nv/template-upstream-main" ]; then
     cd .nv/template-upstream-main && git pull && cd ../..
 else
-    git clone https://github.com/cloudvoyant/lib .nv/template-upstream-main
+    git clone https://github.com/cloudvoyant/nv-ziglib-template .nv/template-upstream-main
 fi
 ```
 
@@ -46,19 +46,26 @@ Structure:
 # Migration Plan: v<current> → v<target>
 
 ## Overview
-Migrate from nv-lib-template v<current> to v<target>
+Migrate from nv-ziglib-template v<current> to v<target>
 
 ## Files to Review
 
+### Zig-Specific Files
+- [ ] build.zig - Check for build configuration changes
+- [ ] build.zig.zon - Check for dependency updates
+- [ ] src/lib.zig - Check for library structure changes
+- [ ] src/main.zig - Check for CLI changes
+
 ### Critical Infrastructure Files
 - [ ] justfile - Check for recipe changes
-- [ ] scripts/setup.sh - Check for new dependencies
+- [ ] scripts/setup.sh - Check for new dependencies (Zig, ZLS)
 - [ ] scripts/scaffold.sh - Check for improvements
 - [ ] scripts/upversion.sh - Check for versioning updates
 - [ ] scripts/utils.sh - Check for utility function updates
+- [ ] scripts/toggle-files.sh - Check for Zig-specific file visibility
 - [ ] .github/workflows/ci.yml - Check for workflow updates
 - [ ] .github/workflows/release.yml - Check for release changes
-- [ ] .envrc.template - Check for new variables
+- [ ] .envrc - Check for new variables
 
 ### Configuration Files
 - [ ] .gitignore - Check for new patterns
@@ -91,6 +98,12 @@ For each file with differences, I'll create tasks like:
 - [ ] Review changes and decide what to apply
 - [ ] Apply relevant changes (preserve project customizations)
 - [ ] Test: just build && just test
+
+### Task 2: Review Zig build configuration
+- [ ] Compare: diff build.zig .nv/template-upstream-main/build.zig
+- [ ] Compare: diff build.zig.zon .nv/template-upstream-main/build.zig.zon
+- [ ] Review changes and decide what to apply
+- [ ] Test: zig build && zig build test
 
 [Repeat for each file category]
 
@@ -202,7 +215,7 @@ If `.envrc` doesn't have `NV_TEMPLATE_VERSION`, add it:
 ```bash
 echo '' >> .envrc
 echo '# Nedavellir template tracking' >> .envrc
-echo 'export NV_TEMPLATE=nv-lib-template' >> .envrc
+echo 'export NV_TEMPLATE=nv-ziglib-template' >> .envrc
 echo 'export NV_TEMPLATE_VERSION=<current-version>' >> .envrc
 ```
 
