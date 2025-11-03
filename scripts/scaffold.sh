@@ -172,6 +172,26 @@ words_to_flat() {
 # DEFAULT PROJECT NAME ---------------------------------------------------------
 DEFAULT_PROJECT=$(basename "$DEST_DIR")
 
+# GET TEMPLATE NAME AND VERSION -----------------------------------------------
+log_info "Detecting template name and version..."
+
+# Use environment variables from sourced .envrc
+TEMPLATE_NAME="$PROJECT"
+TEMPLATE_VERSION="$VERSION"
+
+# Validate we have the required values
+if [ -z "$TEMPLATE_NAME" ]; then
+    log_error "Could not determine template name (PROJECT not set)"
+    exit 1
+fi
+
+if [ -z "$TEMPLATE_VERSION" ]; then
+    log_error "Could not determine template version (VERSION not set)"
+    exit 1
+fi
+
+log_success "Template: $TEMPLATE_NAME v$TEMPLATE_VERSION"
+
 # INTERACTIVE PROMPTS ----------------------------------------------------------
 if [ "$NON_INTERACTIVE" = false ]; then
     log_info "Scaffolding new project from $TEMPLATE_NAME platform"
@@ -220,26 +240,6 @@ else
 
     log_info "Non-interactive mode: project=$PROJECT_NAME"
 fi
-
-# GET TEMPLATE NAME AND VERSION -----------------------------------------------
-log_info "Detecting template name and version..."
-
-# Use environment variables from sourced .envrc
-TEMPLATE_NAME="$PROJECT"
-TEMPLATE_VERSION="$VERSION"
-
-# Validate we have the required values
-if [ -z "$TEMPLATE_NAME" ]; then
-    log_error "Could not determine template name (PROJECT not set)"
-    exit 1
-fi
-
-if [ -z "$TEMPLATE_VERSION" ]; then
-    log_error "Could not determine template version (VERSION not set)"
-    exit 1
-fi
-
-log_info "Template: $TEMPLATE_NAME v$TEMPLATE_VERSION"
 
 # BACKUP DESTINATION DIRECTORY ------------------------------------------------
 log_info "Creating backup of destination directory..."

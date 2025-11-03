@@ -89,6 +89,20 @@ teardown() {
     [[ "$output" == *"project=my-valid_project123"* ]]
 }
 
+@test "scaffold.sh works in interactive mode (smoke test)" {
+    # Smoke test to catch unbound variables and syntax errors in interactive mode
+    # Pipes default responses: project name (default), no GCP, no .claude/
+    run bash ./scripts/scaffold.sh --src . --dest ../.. <<EOF
+
+
+n
+n
+EOF
+
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "Scaffolding complete" ]]
+}
+
 @test "updates .envrc with template tracking variables" {
     bash ./scripts/scaffold.sh \
         --src . \
