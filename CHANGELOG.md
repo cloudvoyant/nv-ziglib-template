@@ -1,3 +1,9 @@
+## [1.6.1](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.6.0...v1.6.1) (2025-11-03)
+
+### Bug Fixes
+
+* resolve unbound variable error in scaffold interactive mode ([60ccd24](https://github.com/cloudvoyant/nv-ziglib-template/commit/60ccd24f15a19b7c0bfb6ce3cf329921f523c69f))
+
 ## [1.6.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.5.0...v1.6.0) (2025-11-02)
 
 ### Features
