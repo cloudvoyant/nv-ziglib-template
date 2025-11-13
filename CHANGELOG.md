@@ -1,3 +1,9 @@
+## [1.6.3](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.6.2...v1.6.3) (2025-11-13)
+
+### Bug Fixes
+
+* fixed issue with scaffolding ([5d8d7f2](https://github.com/cloudvoyant/nv-ziglib-template/commit/5d8d7f263c23aa9bbb7ec5edcacf1968794a1275))
+
 ## [1.6.2](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.6.1...v1.6.2) (2025-11-03)
 
 ### Bug Fixes
