@@ -125,14 +125,14 @@ const {{PROJECT_NAME}} = b.dependency("{{PROJECT_NAME}}", .{
 exe.root_module.addImport("{{PROJECT_NAME}}", {{PROJECT_NAME}}.module("{{PROJECT_NAME}}"));
 ```
 
-See the [{{TEMPLATE_NAME}} User Guide](https://github.com/your-org/{{TEMPLATE_NAME}}/blob/main/docs/user-guide.md) for detailed configuration instructions.
+See the [{{TEMPLATE_NAME}} Development Guide](https://github.com/your-org/{{TEMPLATE_NAME}}/blob/main/docs/development-guide.md) for detailed configuration instructions.
 
 ## Documentation
 
 To learn more about using this template, read the docs:
 
-- [User Guide](docs/user-guide.md) - Complete setup and usage guide
-- [Architecture](docs/architecture.md) - Design and implementation details
+- [Development Guide](docs/development-guide.md) - Complete setup and usage guide
+- [Infrastructure](docs/infrastructure.md) - Design and implementation details
 
 ## References
 

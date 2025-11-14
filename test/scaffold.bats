@@ -191,6 +191,57 @@ EOF
     [ -f "$DEST_DIR/scripts/setup.sh" ]
 }
 
+@test "removes CHANGELOG.md and RELEASE_NOTES.md even if they exist before scaffolding" {
+    # Create CHANGELOG.md and RELEASE_NOTES.md in destination before scaffolding
+    echo "Old changelog" > "$DEST_DIR/CHANGELOG.md"
+    echo "Old release notes" > "$DEST_DIR/RELEASE_NOTES.md"
+
+    # Verify they exist
+    [ -f "$DEST_DIR/CHANGELOG.md" ]
+    [ -f "$DEST_DIR/RELEASE_NOTES.md" ]
+
+    # Run scaffold
+    bash ./scripts/scaffold.sh \
+        --src . \
+        --dest ../.. \
+        --non-interactive \
+        --project testproject
+
+    # Verify they are removed after scaffolding
+    [ ! -f "$DEST_DIR/CHANGELOG.md" ]
+    [ ! -f "$DEST_DIR/RELEASE_NOTES.md" ]
+}
+
+@test "renames documentation files during scaffolding" {
+    bash ./scripts/scaffold.sh \
+        --src . \
+        --dest ../.. \
+        --non-interactive \
+        --project testproject
+
+    # Old filenames should not exist
+    [ ! -f "$DEST_DIR/docs/architecture.md" ]
+    [ ! -f "$DEST_DIR/docs/user-guide.md" ]
+
+    # New filenames should exist
+    [ -f "$DEST_DIR/docs/infrastructure.md" ]
+    [ -f "$DEST_DIR/docs/development-guide.md" ]
+
+    # Titles should be updated
+    run grep "^# Infrastructure$" "$DEST_DIR/docs/infrastructure.md"
+    [ "$status" -eq 0 ]
+
+    run grep "^# Development Guide$" "$DEST_DIR/docs/development-guide.md"
+    [ "$status" -eq 0 ]
+
+    # Intro paragraph should reference the template with link
+    run grep "This project is based on \[nv-ziglib-template\](https://github.com/cloudvoyant/nv-ziglib-template)" "$DEST_DIR/docs/infrastructure.md"
+    [ "$status" -eq 0 ]
+
+    run grep "This project is based on \[nv-ziglib-template\](https://github.com/cloudvoyant/nv-ziglib-template)" "$DEST_DIR/docs/development-guide.md"
+    [ "$status" -eq 0 ]
+}
+
 @test "replaces README.md with template" {
     bash ./scripts/scaffold.sh \
         --src . \
@@ -440,5 +491,33 @@ EOF
     # build.zig should have project name in module
     run grep "myzigtool" build.zig
     [ "$status" -eq 0 ]
+}
+
+@test "scaffolded project can run 'just install' successfully" {
+    # Skip if zig is not installed
+    if ! command -v zig >/dev/null 2>&1; then
+        skip "zig not installed"
+    fi
+
+    bash ./scripts/scaffold.sh \
+        --src . \
+        --dest ../.. \
+        --non-interactive \
+        --project myzigtool
+
+    cd "$DEST_DIR"
+
+    # build.zig.zon should have a valid fingerprint (not 0x0)
+    run grep ".fingerprint = 0x0000000000000000" build.zig.zon
+    [ "$status" -eq 1 ]
+
+    # Should have a fingerprint set
+    run grep -E ".fingerprint = 0x[0-9a-f]+" build.zig.zon
+    [ "$status" -eq 0 ]
+
+    # Most importantly: just install should work
+    run bash -c "source .envrc && just install"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"invalid fingerprint"* ]]
 }
 

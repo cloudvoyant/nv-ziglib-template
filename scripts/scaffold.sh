@@ -24,7 +24,7 @@ source "$(dirname "$0")/utils.sh"
 set -euo pipefail
 
 # Unset PROJECT and VERSION to force fresh read from .envrc
-unset PROJECT VERSION
+unset PROJECT VERSION 2>/dev/null || true
 
 # Source .envrc to get PROJECT and VERSION
 if [ -f ".envrc" ]; then
@@ -274,6 +274,26 @@ rsync -a \
 
 log_success "Platform files copied"
 
+# RENAME DOCUMENTATION FILES ---------------------------------------------------
+# Rename docs before template replacement, then update first paragraph after
+log_info "Renaming documentation files..."
+
+if [ -f "$DEST_DIR/docs/architecture.md" ]; then
+    # Update title
+    sed_inplace 's/^# Architecture$/# Infrastructure/' "$DEST_DIR/docs/architecture.md"
+    # Rename the file
+    mv "$DEST_DIR/docs/architecture.md" "$DEST_DIR/docs/infrastructure.md"
+fi
+
+if [ -f "$DEST_DIR/docs/user-guide.md" ]; then
+    # Update title
+    sed_inplace 's/^# User Guide$/# Development Guide/' "$DEST_DIR/docs/user-guide.md"
+    # Rename the file
+    mv "$DEST_DIR/docs/user-guide.md" "$DEST_DIR/docs/development-guide.md"
+fi
+
+log_success "Documentation files renamed"
+
 # REPLACE TEMPLATE NAME WITH PROJECT NAME IN ALL VARIANTS ---------------------
 log_info "Replacing template name with project name..."
 
@@ -316,6 +336,39 @@ find "$DEST_DIR" -type f \
 done
 
 log_success "Replaced template name with project name"
+
+# UPDATE DOCUMENTATION FIRST PARAGRAPH ----------------------------------------
+# After template replacement, update the first paragraph to reference the template
+log_info "Updating documentation references to template..."
+
+TEMPLATE_REPO_URL="https://github.com/cloudvoyant/nv-ziglib-template"
+
+if [ -f "$DEST_DIR/docs/infrastructure.md" ]; then
+    # Replace the first occurrence of the project description with a template reference
+    # Using awk to replace only the first occurrence (works cross-platform)
+    awk -v url="$TEMPLATE_REPO_URL" -v proj="$PROJECT_KEBAB" '
+        !done && /^`'"$PROJECT_KEBAB"'` is a production-ready/ {
+            sub(/^`'"$PROJECT_KEBAB"'` is a production-ready/, "This project is based on [nv-ziglib-template](" url "), a production-ready")
+            done=1
+        }
+        {print}
+    ' "$DEST_DIR/docs/infrastructure.md" > "$DEST_DIR/docs/infrastructure.md.tmp" && \
+    mv "$DEST_DIR/docs/infrastructure.md.tmp" "$DEST_DIR/docs/infrastructure.md"
+fi
+
+if [ -f "$DEST_DIR/docs/development-guide.md" ]; then
+    # Replace the first occurrence of the project description with a template reference
+    awk -v url="$TEMPLATE_REPO_URL" -v proj="$PROJECT_KEBAB" '
+        !done && /^`'"$PROJECT_KEBAB"'` is a production-ready/ {
+            sub(/^`'"$PROJECT_KEBAB"'` is a production-ready/, "This project is based on [nv-ziglib-template](" url "), a production-ready")
+            done=1
+        }
+        {print}
+    ' "$DEST_DIR/docs/development-guide.md" > "$DEST_DIR/docs/development-guide.md.tmp" && \
+    mv "$DEST_DIR/docs/development-guide.md.tmp" "$DEST_DIR/docs/development-guide.md"
+fi
+
+log_success "Documentation references updated"
 
 # UPDATE .ENVRC ----------------------------------------------------------------
 log_info "Configuring .envrc..."
@@ -374,12 +427,8 @@ log_success "Created and configured .envrc from template"
 if [ -f "$DEST_DIR/install.sh" ]; then
     log_info "Configuring install.sh..."
 
-    # Try to get GitHub repo from git remote (if initialized)
-    if git -C "$DEST_DIR" rev-parse --git-dir > /dev/null 2>&1; then
-        GITHUB_REPO=$(git -C "$DEST_DIR" remote get-url origin 2>/dev/null | sed -E 's#https://github.com/([^/]+/[^/]+)(\.git)?#\1#' || echo "")
-    else
-        GITHUB_REPO=""
-    fi
+    # Hardcode template repo (scaffolded projects should update this)
+    GITHUB_REPO="cloudvoyant/nv-ziglib-template"
 
     # If no git remote, prompt user or use placeholder
     if [ -z "$GITHUB_REPO" ]; then
@@ -398,6 +447,9 @@ if [ -f "$DEST_DIR/install.sh" ]; then
 
     # Replace BINARY_NAME placeholder with project name (kebab-case is standard for binaries)
     sed_inplace "s#BINARY_NAME=\"${TEMPLATE_KEBAB}\"#BINARY_NAME=\"${PROJECT_KEBAB}\"#" "$DEST_DIR/install.sh"
+
+    # Update usage comment with actual repo
+    sed_inplace "s#https://raw.githubusercontent.com/USER/REPO#https://raw.githubusercontent.com/$GITHUB_REPO#" "$DEST_DIR/install.sh"
 
     log_success "Configured install.sh (repo: $GITHUB_REPO, binary: $PROJECT_KEBAB)"
 fi
@@ -421,6 +473,10 @@ fi
 
 # CLEAN UP TEMPLATE FILES ------------------------------------------------------
 log_info "Cleaning template files..."
+
+# Remove template-specific files that shouldn't be in scaffolded projects
+rm -f "$DEST_DIR/CHANGELOG.md"
+rm -f "$DEST_DIR/RELEASE_NOTES.md"
 
 # Remove template section from justfile
 JUSTFILE="$DEST_DIR/justfile"
@@ -459,11 +515,46 @@ log_success "Removed template development files"
 log_info "Regenerating Zig package fingerprint..."
 
 if command -v zig >/dev/null 2>&1; then
-    # Change to destination directory and run zig build --fetch
-    (cd "$DEST_DIR" && zig build --fetch 2>&1) || {
-        log_warn "Failed to regenerate fingerprint. Run 'just install' manually after scaffolding."
-    }
-    log_success "Zig package fingerprint regenerated"
+    # Temporarily disable exit on error for this section
+    set +e
+
+    # Run zig build --fetch to get the fingerprint error message
+    # The error message will contain: "use this value: 0x..."
+    BUILD_OUTPUT=$(cd "$DEST_DIR" && zig build --fetch 2>&1)
+    BUILD_EXIT_CODE=$?
+
+    # Extract the fingerprint from the error message
+    FINGERPRINT=$(echo "$BUILD_OUTPUT" | grep -o "use this value: 0x[0-9a-f]*" | cut -d' ' -f4)
+
+    if [ -n "$FINGERPRINT" ]; then
+        # Update build.zig.zon with the correct fingerprint
+        if [ -f "$DEST_DIR/build.zig.zon" ]; then
+            sed_inplace "s/\.fingerprint = .*/\.fingerprint = $FINGERPRINT,/" "$DEST_DIR/build.zig.zon"
+            log_success "Updated build.zig.zon with fingerprint: $FINGERPRINT"
+
+            # Run zig build --fetch again to verify it works
+            (cd "$DEST_DIR" && zig build --fetch >/dev/null 2>&1)
+            if [ $? -eq 0 ]; then
+                log_success "Zig package fingerprint verified"
+            else
+                log_warn "Fingerprint updated but verification failed. Run 'just install' manually."
+            fi
+        else
+            log_warn "build.zig.zon not found, skipping fingerprint update"
+        fi
+    else
+        # No fingerprint error means it might have worked, or there's a different error
+        if echo "$BUILD_OUTPUT" | grep -q "invalid fingerprint"; then
+            log_warn "Could not extract fingerprint from error. Run 'just install' manually after scaffolding."
+        elif [ $BUILD_EXIT_CODE -eq 0 ]; then
+            log_success "Zig package fingerprint regenerated"
+        else
+            log_warn "Zig build failed. Run 'just install' manually after scaffolding."
+        fi
+    fi
+
+    # Re-enable exit on error
+    set -e
 else
     log_warn "Zig not found. Run 'just install' after scaffolding to regenerate fingerprint."
 fi
