@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.6.3...v1.7.0) (2025-11-14)
+
+### Features
+
+* improve template infrastructure and developer experience ([96b8c06](https://github.com/cloudvoyant/nv-ziglib-template/commit/96b8c062ca6d9d88b2b8cc5567ae63a221fc0f92))
+
 ## [1.6.3](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.6.2...v1.6.3) (2025-11-13)
 
 ### Bug Fixes

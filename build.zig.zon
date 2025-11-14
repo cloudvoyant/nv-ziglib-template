@@ -1,6 +1,6 @@
 .{
     .name = .nv_ziglib_template,
-    .version = "1.6.3",
+    .version = "1.7.0",
     .dependencies = .{},
     .paths = .{
         "build.zig",
