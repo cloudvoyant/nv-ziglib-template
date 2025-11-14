@@ -1,3 +1,9 @@
+## [1.8.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.7.0...v1.8.0) (2025-11-14)
+
+### Features
+
+* improve scaffolding reliability and project configuration ([b3b0351](https://github.com/cloudvoyant/nv-ziglib-template/commit/b3b03515500b7579994b1db5b4287297c045dd67))
+
 ## [1.7.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.6.3...v1.7.0) (2025-11-14)
 
 ### Features
