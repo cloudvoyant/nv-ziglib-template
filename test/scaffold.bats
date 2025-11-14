@@ -252,6 +252,9 @@ EOF
     # README should exist
     [ -f "$DEST_DIR/README.md" ]
 
+    # README.template.md should NOT exist (should be deleted)
+    [ ! -f "$DEST_DIR/README.template.md" ]
+
     # Should contain project name
     run grep "# myproject" "$DEST_DIR/README.md"
     [ "$status" -eq 0 ]

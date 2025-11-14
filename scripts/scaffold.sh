@@ -521,6 +521,9 @@ if [ -f "$SRC_DIR/README.template.md" ]; then
          s/{{TEMPLATE_VERSION}}/$TEMPLATE_VERSION/g" \
         "$SRC_DIR/README.template.md" > "$DEST_DIR/README.md"
 
+    # Remove template file after creating README.md
+    rm -f "$DEST_DIR/README.template.md"
+
     log_success "Created README.md from template"
 else
     log_warn "README.template.md not found, keeping original README.md"
