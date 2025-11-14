@@ -31,6 +31,7 @@ Development tools (--dev):
 CI essentials (--ci):
 - node/npx (for semantic-release)
 - gcloud (Google Cloud SDK)
+- bats-core (bash testing framework)
 - parallel (GNU parallel for faster test execution)
 
 Template development (--template):
@@ -87,7 +88,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Required: bash, just, direnv, zig"
             echo "Development (--dev): docker, node/npx, gcloud, shellcheck, shfmt, claude, zls"
-            echo "CI (--ci): docker, node/npx, gcloud, parallel"
+            echo "CI (--ci): docker, node/npx, gcloud, bats-core, parallel"
             echo "Template (--template): bats-core, parallel"
             echo "Starship (--starship): starship prompt"
             exit 0
@@ -727,7 +728,7 @@ check_dependencies() {
         log_info "Development tools: docker, node/npx, gcloud, shellcheck, shfmt, claude (will be installed)"
     fi
     if [ "$INSTALL_CI" = true ]; then
-        log_info "CI essentials: docker, node/npx, gcloud, parallel (will be installed)"
+        log_info "CI essentials: docker, node/npx, gcloud, bats-core, parallel (will be installed)"
     fi
     if [ "$INSTALL_TEMPLATE" = true ]; then
         log_info "Template development: bats-core, parallel (will be installed)"
@@ -953,8 +954,8 @@ check_dependencies() {
         fi
     fi
 
-    # Check bats-core (for --template only)
-    if [ "$INSTALL_TEMPLATE" = true ]; then
+    # Check bats-core (for --template or --ci)
+    if [ "$INSTALL_TEMPLATE" = true ] || [ "$INSTALL_CI" = true ]; then
         current=$((current + 1))
         progress_step $current "Checking bats-core..."
         if command_exists bats; then
