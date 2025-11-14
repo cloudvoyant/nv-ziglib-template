@@ -1,3 +1,14 @@
+## [1.9.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.8.0...v1.9.0) (2025-11-14)
+
+### Features
+
+* add GNU parallel for faster parallel test execution ([97b60f6](https://github.com/cloudvoyant/nv-ziglib-template/commit/97b60f62360892d7965f9d9f6fe60b817d0df40e))
+* add template tests to release workflow and cleanup scaffolded projects ([92eb91b](https://github.com/cloudvoyant/nv-ziglib-template/commit/92eb91be445376b29954ee30a5c55882efd9253a))
+
+### Bug Fixes
+
+* install bats-core with --ci flag for template tests ([586484c](https://github.com/cloudvoyant/nv-ziglib-template/commit/586484ca624ad2e78c2b6314a86b12818402c92f))
+
 ## [1.8.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.7.0...v1.8.0) (2025-11-14)
 
 ### Features
