@@ -1,3 +1,9 @@
+## [1.9.1](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.9.0...v1.9.1) (2025-11-14)
+
+### Bug Fixes
+
+* delete README.template.md after scaffolding ([6b52387](https://github.com/cloudvoyant/nv-ziglib-template/commit/6b52387439aacc99d59676f000ed80bff5922ba8))
+
 ## [1.9.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.8.0...v1.9.0) (2025-11-14)
 
 ### Features
