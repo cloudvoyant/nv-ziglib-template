@@ -265,7 +265,12 @@ test-template:
     #!/usr/bin/env bash
     if command -v bats >/dev/null 2>&1; then
         echo -e "{{INFO}}Running template tests{{NORMAL}}";
-        bats test/;
+        if command -v parallel >/dev/null 2>&1; then
+            echo -e "{{INFO}}Using parallel execution{{NORMAL}}";
+            bats --jobs $(($(nproc)-1)) test/;
+        else
+            bats test/;
+        fi;
     else
         echo -e "{{ERROR}}bats not installed. Run: just setup --template{{NORMAL}}";
         exit 1;

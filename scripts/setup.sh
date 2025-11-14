@@ -31,9 +31,11 @@ Development tools (--dev):
 CI essentials (--ci):
 - node/npx (for semantic-release)
 - gcloud (Google Cloud SDK)
+- parallel (GNU parallel for faster test execution)
 
 Template development (--template):
 - bats-core (bash testing framework)
+- parallel (GNU parallel for parallel test execution)
 
 Starship prompt (--starship):
 - starship (customizable shell prompt)
@@ -85,8 +87,8 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Required: bash, just, direnv, zig"
             echo "Development (--dev): docker, node/npx, gcloud, shellcheck, shfmt, claude, zls"
-            echo "CI (--ci): docker, node/npx, gcloud"
-            echo "Template (--template): bats-core"
+            echo "CI (--ci): docker, node/npx, gcloud, parallel"
+            echo "Template (--template): bats-core, parallel"
             echo "Starship (--starship): starship prompt"
             exit 0
             ;;
@@ -636,6 +638,44 @@ install_bats() {
     log_success "bats-core installation completed"
 }
 
+# Install GNU parallel based on platform
+install_parallel() {
+    log_info "Installing GNU parallel..."
+
+    case $PLATFORM in
+    Mac)
+        if command_exists brew; then
+            brew install parallel
+        else
+            log_warn "Homebrew not found. Please install GNU parallel manually from https://www.gnu.org/software/parallel/"
+            return 1
+        fi
+        ;;
+    Linux)
+        if command_exists apk; then
+            sudo apk add --no-cache parallel
+        elif command_exists apt-get; then
+            sudo apt-get install -y --no-install-recommends parallel
+        elif command_exists yum; then
+            sudo yum install -y parallel
+        else
+            log_warn "Installing GNU parallel from source..."
+            wget https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2
+            tar xjf parallel-latest.tar.bz2
+            cd parallel-* || return 1
+            ./configure && make && sudo make install
+            cd .. && rm -rf parallel-*
+        fi
+        ;;
+    *)
+        log_warn "Unsupported platform for automatic GNU parallel installation. Please install GNU parallel manually from https://www.gnu.org/software/parallel/"
+        return 1
+        ;;
+    esac
+
+    log_success "GNU parallel installation completed"
+}
+
 # Install Claude CLI based on platform
 install_claude() {
     log_info "Installing Claude CLI..."
@@ -687,10 +727,10 @@ check_dependencies() {
         log_info "Development tools: docker, node/npx, gcloud, shellcheck, shfmt, claude (will be installed)"
     fi
     if [ "$INSTALL_CI" = true ]; then
-        log_info "CI essentials: docker, node/npx, gcloud (will be installed)"
+        log_info "CI essentials: docker, node/npx, gcloud, parallel (will be installed)"
     fi
     if [ "$INSTALL_TEMPLATE" = true ]; then
-        log_info "Template development: bats-core (will be installed)"
+        log_info "Template development: bats-core, parallel (will be installed)"
     fi
     if [ "$INSTALL_STARSHIP" = true ]; then
         log_info "Starship prompt: starship (will be installed)"
@@ -925,6 +965,22 @@ check_dependencies() {
                 log_success "bats-core installed successfully"
             else
                 log_warn "Skipping bats-core - install manually from https://github.com/bats-core/bats-core if needed"
+            fi
+        fi
+    fi
+
+    # Check GNU parallel (for --template or --ci)
+    if [ "$INSTALL_TEMPLATE" = true ] || [ "$INSTALL_CI" = true ]; then
+        current=$((current + 1))
+        progress_step $current "Checking GNU parallel..."
+        if command_exists parallel; then
+            log_success "GNU parallel is already installed: $(parallel --version 2>/dev/null | head -1)"
+        else
+            log_warn "GNU parallel not found (enables faster test execution)"
+            if install_parallel; then
+                log_success "GNU parallel installed successfully"
+            else
+                log_warn "Skipping GNU parallel - install manually from https://www.gnu.org/software/parallel/ if needed"
             fi
         fi
     fi

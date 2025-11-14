@@ -12,7 +12,12 @@
 
 setup() {
     export ORIGINAL_DIR="$PWD"
-    export TEST_ROOT="$PWD/.nv/test-clients"
+
+    # Create unique test directory per test for parallel execution safety
+    # BATS encodes special chars as -XX (hex), decode them using perl
+    TEST_NAME_DECODED=$(printf '%s' "$BATS_TEST_NAME" | perl -pe 's/-([0-9a-f]{2})/chr(hex($1))/gie')
+    TEST_NAME_SANITIZED=$(printf '%s' "$TEST_NAME_DECODED" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g')
+    export TEST_ROOT="$PWD/.nv/test-clients-$TEST_NAME_SANITIZED"
 
     # Create test directory
     mkdir -p "$TEST_ROOT"
