@@ -16,7 +16,6 @@
     "vscode": {
       "extensions": [
         "ms-azuretools.vscode-docker",
-        "mkhl.direnv",
         "skellock.just",
         "nefrob.vscode-just-syntax",
         "timonwong.shellcheck",

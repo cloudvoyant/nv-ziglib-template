@@ -429,6 +429,15 @@ if [ -f "$JUSTFILE" ]; then
     sed_inplace '/# TEMPLATE$/,$ {/# TEMPLATE$/d; d;}' "$JUSTFILE"
 fi
 
+# Remove --template flag from Dockerfile
+DOCKERFILE="$DEST_DIR/Dockerfile"
+if [ -f "$DOCKERFILE" ]; then
+    # Remove --template flag from setup.sh calls
+    sed_inplace 's/--template //g' "$DOCKERFILE"
+    # Update comment to reflect the change
+    sed_inplace 's/and template testing tools (bats-core), //' "$DOCKERFILE"
+fi
+
 # Replace README.md with template
 if [ -f "$SRC_DIR/README.template.md" ]; then
     log_info "Creating README from template..."

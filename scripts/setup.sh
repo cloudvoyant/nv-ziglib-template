@@ -8,9 +8,10 @@ Options:
   --dev              Install development tools (docker, shellcheck, shfmt, claude, zls)
   --ci               Install CI essentials (node/npx, gcloud)
   --template         Install template development tools (bats-core)
+  --starship         Install and configure Starship prompt
   --docker-optimize  Optimize for Docker image size (consolidate operations, aggressive cleanup)
 
-Flags can be combined: setup.sh --dev --template --docker-optimize
+Flags can be combined: setup.sh --dev --template --starship --docker-optimize
 
 Required dependencies (always installed):
 - bash (shell)
@@ -33,6 +34,9 @@ CI essentials (--ci):
 
 Template development (--template):
 - bats-core (bash testing framework)
+
+Starship prompt (--starship):
+- starship (customizable shell prompt)
 DOCUMENTATION
 
 # IMPORTS ----------------------------------------------------------------------
@@ -44,6 +48,7 @@ set -euo pipefail
 INSTALL_DEV=false
 INSTALL_CI=false
 INSTALL_TEMPLATE=false
+INSTALL_STARSHIP=false
 DOCKER_OPTIMIZE=false
 
 while [[ $# -gt 0 ]]; do
@@ -60,6 +65,10 @@ while [[ $# -gt 0 ]]; do
             INSTALL_TEMPLATE=true
             shift
             ;;
+        --starship)
+            INSTALL_STARSHIP=true
+            shift
+            ;;
         --docker-optimize)
             DOCKER_OPTIMIZE=true
             shift
@@ -71,12 +80,14 @@ while [[ $# -gt 0 ]]; do
             echo "  --dev         Install development tools"
             echo "  --ci          Install CI essentials"
             echo "  --template    Install template development tools"
+            echo "  --starship    Install and configure Starship prompt"
             echo "  -h, --help    Show this help message"
             echo ""
             echo "Required: bash, just, direnv, zig"
             echo "Development (--dev): docker, node/npx, gcloud, shellcheck, shfmt, claude, zls"
             echo "CI (--ci): docker, node/npx, gcloud"
             echo "Template (--template): bats-core"
+            echo "Starship (--starship): starship prompt"
             exit 0
             ;;
         *)
@@ -124,7 +135,7 @@ install_bash() {
         if command_exists apk; then
             sudo apk add --no-cache bash
         elif command_exists apt-get; then
-            sudo apt-get install -y bash
+            sudo apt-get install -y --no-install-recommends bash
         elif command_exists yum; then
             sudo yum install -y bash
         elif command_exists pacman; then
@@ -197,7 +208,7 @@ install_docker() {
             sudo rc-update add docker boot 2>/dev/null || true
             sudo service docker start 2>/dev/null || true
         elif command_exists apt-get; then
-            sudo apt-get install -y docker.io docker-compose
+            sudo apt-get install -y --no-install-recommends docker.io docker-compose
             sudo systemctl start docker
             sudo systemctl enable docker
         elif command_exists yum; then
@@ -243,7 +254,7 @@ install_direnv() {
         elif command_exists apk; then
             sudo apk add --no-cache direnv
         elif command_exists apt-get; then
-            sudo apt-get install -y direnv
+            sudo apt-get install -y --no-install-recommends direnv
         elif command_exists yum; then
             sudo yum install -y direnv
         elif command_exists pacman; then
@@ -292,7 +303,7 @@ install_zig() {
             local apt_version=$(apt-cache policy zig 2>/dev/null | grep Candidate | awk '{print $2}')
             if [ -n "$apt_version" ] && [ "$apt_version" != "(none)" ]; then
                 log_info "Installing Zig from apt (version: $apt_version)..."
-                sudo apt-get install -y zig
+                sudo apt-get install -y --no-install-recommends zig
             else
                 log_info "Installing Zig from binary (apt version too old or unavailable)..."
                 install_zig_from_binary
@@ -349,7 +360,7 @@ install_node() {
         if command_exists apk; then
             sudo apk add --no-cache nodejs npm
         elif command_exists apt-get; then
-            sudo apt-get install -y nodejs npm
+            sudo apt-get install -y --no-install-recommends nodejs npm
         elif command_exists yum; then
             sudo yum install -y nodejs npm
         elif command_exists pacman; then
@@ -437,7 +448,32 @@ install_gcloud() {
         fi
         ;;
     Linux)
-        if command_exists apk; then
+        # For Docker builds, always use tarball method to avoid apt repository GPG key issues
+        if [ "$DOCKER_OPTIMIZE" = true ]; then
+            log_info "Installing gcloud from official tarball (Docker optimized)..."
+            if ! command_exists python3; then
+                if command_exists apk; then
+                    sudo apk add --no-cache python3 py3-pip
+                elif command_exists apt-get; then
+                    sudo apt-get install -y --no-install-recommends python3
+                fi
+            fi
+
+            # Detect architecture
+            local arch=$(uname -m)
+            if [ "$arch" = "aarch64" ] || [ "$arch" = "arm64" ]; then
+                arch="arm"
+            else
+                arch="x86_64"
+            fi
+
+            curl -O "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-${arch}.tar.gz"
+            tar -xf "google-cloud-cli-linux-${arch}.tar.gz"
+            sudo ./google-cloud-sdk/install.sh --quiet --install-dir=/usr/local
+            rm -rf google-cloud-sdk "google-cloud-cli-linux-${arch}.tar.gz"
+            # Add to PATH
+            echo 'export PATH=$PATH:/usr/local/google-cloud-sdk/bin' | sudo tee -a /etc/profile.d/gcloud.sh
+        elif command_exists apk; then
             # Alpine doesn't have official gcloud package, install from tarball
             log_info "Installing gcloud from official tarball..."
             if ! command_exists python3; then
@@ -450,19 +486,22 @@ install_gcloud() {
             # Add to PATH
             echo 'export PATH=$PATH:/usr/local/google-cloud-sdk/bin' | sudo tee -a /etc/profile.d/gcloud.sh
         elif command_exists apt-get; then
-            # Add gcloud apt repository
-            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-
-            # Import Google Cloud public key
+            # Import Google Cloud public key (using modern method)
             if command_exists curl; then
-                curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+                curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
             else
                 log_error "curl is required to install gcloud"
                 return 1
             fi
 
+            # Add gcloud apt repository
+            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+
+            # Update package list to include gcloud repository
+            sudo apt-get update
+
             # Install gcloud
-            sudo apt-get install -y google-cloud-sdk
+            sudo apt-get install -y --no-install-recommends google-cloud-sdk
         elif command_exists yum; then
             # Add gcloud yum repository
             sudo tee /etc/yum.repos.d/google-cloud-sdk.repo << EOM
@@ -507,7 +546,7 @@ install_shellcheck() {
         if command_exists apk; then
             sudo apk add --no-cache shellcheck
         elif command_exists apt-get; then
-            sudo apt-get install -y shellcheck
+            sudo apt-get install -y --no-install-recommends shellcheck
         elif command_exists yum; then
             sudo yum install -y ShellCheck
         elif command_exists pacman; then
@@ -576,7 +615,7 @@ install_bats() {
         if command_exists apk; then
             sudo apk add --no-cache bats
         elif command_exists apt-get; then
-            sudo apt-get install -y bats
+            sudo apt-get install -y --no-install-recommends bats
         elif command_exists yum; then
             sudo yum install -y bats
         else
@@ -613,6 +652,32 @@ install_claude() {
     log_success "Claude CLI installation completed"
 }
 
+# Install Starship prompt
+install_starship() {
+    log_info "Installing Starship prompt..."
+
+    case $PLATFORM in
+    Mac)
+        if command_exists brew; then
+            brew install starship
+        else
+            log_warn "Homebrew not found. Installing via curl..."
+            curl -sS https://starship.rs/install.sh | sh -s -- -y
+        fi
+        ;;
+    Linux)
+        # Use curl installer for all Linux platforms (works for Docker)
+        curl -sS https://starship.rs/install.sh | sh -s -- -y
+        ;;
+    *)
+        log_warn "Unsupported platform for automatic starship installation"
+        return 1
+        ;;
+    esac
+
+    log_success "Starship installation completed"
+}
+
 # Check and install dependencies
 check_dependencies() {
     log_info "Checking dependencies..."
@@ -627,8 +692,11 @@ check_dependencies() {
     if [ "$INSTALL_TEMPLATE" = true ]; then
         log_info "Template development: bats-core (will be installed)"
     fi
-    if [ "$INSTALL_DEV" = false ] && [ "$INSTALL_CI" = false ] && [ "$INSTALL_TEMPLATE" = false ]; then
-        log_info "Optional tools: skipped (use --dev, --ci, or --template flags to install)"
+    if [ "$INSTALL_STARSHIP" = true ]; then
+        log_info "Starship prompt: starship (will be installed)"
+    fi
+    if [ "$INSTALL_DEV" = false ] && [ "$INSTALL_CI" = false ] && [ "$INSTALL_TEMPLATE" = false ] && [ "$INSTALL_STARSHIP" = false ]; then
+        log_info "Optional tools: skipped (use --dev, --ci, --template, or --starship flags to install)"
     fi
     echo ""
 
@@ -644,7 +712,6 @@ check_dependencies() {
         fi
     fi
 
-    local total=10
     local current=0
     local failed_required=0
 
@@ -652,7 +719,7 @@ check_dependencies() {
 
     # Check Bash (REQUIRED)
     current=$((current + 1))
-    progress_step $current $total "Checking Bash (required)..."
+    progress_step $current "Checking Bash (required)..."
     if command_exists bash; then
         log_success "Bash is already installed: $(bash --version | head -n1)"
     else
@@ -667,7 +734,7 @@ check_dependencies() {
 
     # Check just (REQUIRED)
     current=$((current + 1))
-    progress_step $current $total "Checking just (required)..."
+    progress_step $current "Checking just (required)..."
     if command_exists just; then
         log_success "just is already installed: $(just --version)"
     else
@@ -682,7 +749,7 @@ check_dependencies() {
 
     # Check direnv (REQUIRED)
     current=$((current + 1))
-    progress_step $current $total "Checking direnv (required)..."
+    progress_step $current "Checking direnv (required)..."
     if command_exists direnv; then
         log_success "direnv is already installed: $(direnv --version)"
     else
@@ -697,7 +764,7 @@ check_dependencies() {
 
     # Check Zig (REQUIRED)
     current=$((current + 1))
-    progress_step $current $total "Checking Zig (required)..."
+    progress_step $current "Checking Zig (required)..."
     if command_exists zig; then
         log_success "Zig is already installed: $(zig version)"
     else
@@ -721,7 +788,7 @@ check_dependencies() {
     # Check Docker (for --dev only)
     if [ "$INSTALL_DEV" = true ]; then
         current=$((current + 1))
-        progress_step $current $total "Checking Docker..."
+        progress_step $current "Checking Docker..."
         if command_exists docker; then
             log_success "Docker is already installed: $(docker --version)"
         else
@@ -737,7 +804,7 @@ check_dependencies() {
     # Check Node.js and npx (for --dev or --ci)
     if [ "$INSTALL_DEV" = true ] || [ "$INSTALL_CI" = true ]; then
         current=$((current + 1))
-        progress_step $current $total "Checking Node.js and npx..."
+        progress_step $current "Checking Node.js and npx..."
         if command_exists npx; then
             log_success "Node.js and npx are already installed: $(node --version)"
         else
@@ -752,7 +819,7 @@ check_dependencies() {
         # Install semantic-release and required plugins if npx is available
         if command_exists npx; then
             current=$((current + 1))
-            progress_step $current $total "Installing semantic-release plugins..."
+            progress_step $current "Installing semantic-release plugins..."
             log_info "Installing semantic-release and plugins..."
 
             # Install globally to avoid needing package.json in every project
@@ -769,7 +836,7 @@ check_dependencies() {
     # Check gcloud (for --dev or --ci)
     if [ "$INSTALL_DEV" = true ] || [ "$INSTALL_CI" = true ]; then
         current=$((current + 1))
-        progress_step $current $total "Checking Google Cloud SDK..."
+        progress_step $current "Checking Google Cloud SDK..."
         if command_exists gcloud; then
             log_success "Google Cloud SDK is already installed: $(gcloud --version | head -n1)"
         else
@@ -785,7 +852,7 @@ check_dependencies() {
     # Check shellcheck (for --dev only)
     if [ "$INSTALL_DEV" = true ]; then
         current=$((current + 1))
-        progress_step $current $total "Checking shellcheck..."
+        progress_step $current "Checking shellcheck..."
         if command_exists shellcheck; then
             log_success "shellcheck is already installed: $(shellcheck --version | head -n2 | tail -n1)"
         else
@@ -801,7 +868,7 @@ check_dependencies() {
     # Check shfmt (for --dev only)
     if [ "$INSTALL_DEV" = true ]; then
         current=$((current + 1))
-        progress_step $current $total "Checking shfmt..."
+        progress_step $current "Checking shfmt..."
         if command_exists shfmt; then
             log_success "shfmt is already installed: $(shfmt --version)"
         else
@@ -817,7 +884,7 @@ check_dependencies() {
     # Check Claude CLI (for --dev only)
     if [ "$INSTALL_DEV" = true ]; then
         current=$((current + 1))
-        progress_step $current $total "Checking Claude CLI..."
+        progress_step $current "Checking Claude CLI..."
         if command_exists claude; then
             log_success "Claude CLI is already installed: $(claude --version 2>/dev/null || echo 'version unknown')"
         else
@@ -833,7 +900,7 @@ check_dependencies() {
     # Check ZLS (for --dev only)
     if [ "$INSTALL_DEV" = true ]; then
         current=$((current + 1))
-        progress_step $current $total "Checking ZLS (Zig Language Server)..."
+        progress_step $current "Checking ZLS (Zig Language Server)..."
         if command_exists zls; then
             log_success "ZLS is already installed: $(zls --version)"
         else
@@ -849,7 +916,7 @@ check_dependencies() {
     # Check bats-core (for --template only)
     if [ "$INSTALL_TEMPLATE" = true ]; then
         current=$((current + 1))
-        progress_step $current $total "Checking bats-core..."
+        progress_step $current "Checking bats-core..."
         if command_exists bats; then
             log_success "bats-core is already installed: $(bats --version)"
         else
@@ -859,6 +926,65 @@ check_dependencies() {
             else
                 log_warn "Skipping bats-core - install manually from https://github.com/bats-core/bats-core if needed"
             fi
+        fi
+    fi
+
+    # Check Starship (for --starship only)
+    if [ "$INSTALL_STARSHIP" = true ]; then
+        current=$((current + 1))
+        progress_step $current "Checking Starship prompt..."
+        if command_exists starship; then
+            log_success "Starship is already installed: $(starship --version)"
+        else
+            log_warn "Starship not found (prompt for dev containers)"
+            if install_starship; then
+                log_success "Starship installed successfully"
+            else
+                log_warn "Skipping Starship - install manually from https://starship.rs if needed"
+            fi
+        fi
+
+        # Configure Starship if installed
+        if command_exists starship; then
+            # Create config directory
+            mkdir -p /home/vscode/.config
+
+            # Create starship config
+            cat > /home/vscode/.config/starship.toml <<'EOF'
+# Starship prompt configuration for dev containers
+format = """
+[┌───────────────────────────────────────────────────────────>](bold green)
+[│](bold green) $directory$git_branch$git_status
+[└─>](bold green) """
+
+[directory]
+style = "blue bold"
+truncation_length = 3
+truncate_to_repo = true
+
+[git_branch]
+symbol = " "
+style = "bold purple"
+
+[git_status]
+style = "red bold"
+
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[➜](bold red)"
+EOF
+
+            # Add starship init to vscode user's bashrc if not already present
+            if [ ! -f /home/vscode/.bashrc ] || ! grep -q "starship init bash" /home/vscode/.bashrc; then
+                echo 'eval "$(starship init bash)"' >> /home/vscode/.bashrc
+                log_success "Starship configured in /home/vscode/.bashrc"
+            fi
+
+            # Set ownership to vscode user
+            chown -R vscode:vscode /home/vscode/.config 2>/dev/null || true
+            chown vscode:vscode /home/vscode/.bashrc 2>/dev/null || true
+
+            log_success "Starship prompt configured"
         fi
     fi
 

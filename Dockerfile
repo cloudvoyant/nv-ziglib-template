@@ -26,12 +26,8 @@ RUN cd /tmp/scripts && \
     ./setup.sh --docker-optimize && \
     rm -rf /tmp/scripts
 
-# Add direnv hook to vscode user's bashrc
-RUN echo 'eval "$(direnv hook bash)"' >> /home/vscode/.bashrc && \
-    chown vscode:vscode /home/vscode/.bashrc
-
 USER vscode
-WORKDIR /workspace
+WORKDIR /workspaces
 
 # ==============================================================================
 # Dev stage: Full development environment for DevContainers
@@ -44,11 +40,21 @@ USER root
 COPY scripts /tmp/scripts
 
 # Install development tools (docker, node/npx, gcloud, shellcheck, shfmt, claude)
-# and template testing tools (bats-core)
+# and template testing tools (bats-core), with starship prompt
 RUN cd /tmp/scripts && \
     chmod +x setup.sh && \
-    ./setup.sh --dev --template --docker-optimize && \
+    ./setup.sh --dev --template --starship --docker-optimize && \
     rm -rf /tmp/scripts
 
+# Configure direnv to auto-allow workspace directory
+RUN mkdir -p /home/vscode/.config/direnv && \
+    echo '[whitelist]' > /home/vscode/.config/direnv/direnv.toml && \
+    echo 'prefix = [ "/workspaces" ]' >> /home/vscode/.config/direnv/direnv.toml && \
+    chown -R vscode:vscode /home/vscode/.config
+
+# Add direnv hook to vscode user's bashrc
+RUN echo 'eval "$(direnv hook bash)"' >> /home/vscode/.bashrc && \
+    chown vscode:vscode /home/vscode/.bashrc
+
 USER vscode
-WORKDIR /workspace
+WORKDIR /workspaces

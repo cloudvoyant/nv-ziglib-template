@@ -29,11 +29,6 @@ NORMAL      := '\033[0m'
 _default:
     @just --list --unsorted
 
-# Load environment
-[group('dev')]
-load:
-    @direnv allow
-
 # Install dependencies
 [group('dev')]
 install:
@@ -117,7 +112,7 @@ lint-fix: format
 upgrade:
     #!/usr/bin/env bash
     if command -v claude >/dev/null 2>&1; then
-        if grep -q "NV_PLATFORM=" .envrc 2>/dev/null; then
+        if grep -q "NV_TEMPLATE=" .envrc 2>/dev/null; then
             claude /upgrade;
         else
             echo -e "{{ERROR}}This project is not based on a template{{NORMAL}}";

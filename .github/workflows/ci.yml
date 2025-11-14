@@ -59,12 +59,17 @@ jobs:
           version: 0.15.1
 
       - name: Setup environment
-        run: bash scripts/setup.sh
+        run: bash scripts/setup.sh --template
 
       - name: Run tests
         run: |
           source .envrc
           just test
+
+      - name: Run template tests
+        run: |
+          source .envrc
+          just test-template
 
       - name: Check formatting
         run: |

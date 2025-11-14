@@ -27,6 +27,34 @@ fi
 
 SETTINGS_FILE="${SCRIPT_DIR}/../.vscode/settings.json"
 
+# Files to hide when in "hide" mode (set to true)
+HIDE_PATTERNS=(
+    ".devcontainer"
+    ".vscode"
+    ".github"
+    ".editorconfig"
+    ".gitignore"
+    ".gitattributes"
+    ".releaserc.json"
+    ".nv"
+    ".zig-cache"
+    ".dockerignore"
+    "Dockerfile"
+    "docker-compose.yml"
+    "version.txt"
+    "scripts"
+    "CONTRIBUTING.md"
+    "CHANGELOG.md"
+)
+
+# Files to keep visible even in "hide" mode (set to false)
+SHOW_PATTERNS=(
+    "justfile"
+    "build.zig"
+    "build.zig.zon"
+    ".claude"
+)
+
 # FUNCTIONS --------------------------------------------------------------------
 
 # Update files.exclude section in settings.json
@@ -42,91 +70,37 @@ update_file_exclusions() {
     cp "$SETTINGS_FILE" "${SETTINGS_FILE}.bak"
 
     if [ "$mode" = "hide" ]; then
-        # Hide non-essential files
-        sed -i.tmp '
-            /"files.exclude": {/,/}/ {
-                s/"\.devcontainer": false/"\.devcontainer": true/
-                s/"\.vscode": [^,]*/"\.vscode": true/
-                s/"\.github": [^,]*/"\.github": true/
-                s/"\.editorconfig": [^,]*/"\.editorconfig": true/
-                s/"\.gitignore": [^,]*/"\.gitignore": true/
-                s/"\.gitattributes": [^,]*/"\.gitattributes": true/
-                s/"\.releaserc\.json": [^,]*/"\.releaserc.json": true/
-                s/"\.nv": [^,]*/"\.nv": true/
-                s/"\.zig-cache": [^,]*/"\.zig-cache": true/
-                s/"\.dockerignore": [^,]*/"\.dockerignore": true/
-                s/"Dockerfile": [^,]*/"Dockerfile": true/
-                s/"docker-compose\.yml": [^,]*/"docker-compose.yml": true/
-                s/"justfile": [^,]*/"justfile": false/
-                s/"build\.zig": [^,]*/"build.zig": false/
-                s/"build\.zig\.zon": [^,]*/"build.zig.zon": false/
-                s/"version\.txt": [^,]*/"version.txt": true/
-                s/"\.claude": [^,]*/"\.claude": false/
-                s/"scripts": [^,]*/"scripts": true/
-                s/"CONTRIBUTING\.md": [^,]*/"CONTRIBUTING.md": true/
-                s/"CHANGELOG\.md": [^,]*/"CHANGELOG.md": true/
-            }
-        ' "$SETTINGS_FILE"
+        # Hide non-essential files using configured patterns
+        # First, set files to hide to true
+        for pattern in "${HIDE_PATTERNS[@]}"; do
+            # Escape special regex characters for sed
+            escaped_pattern=$(echo "$pattern" | sed 's/\./\\./g')
+            sed -i.tmp "s/\"${escaped_pattern}\": [^,]*/\"${pattern}\": true/" "$SETTINGS_FILE"
 
-        # Add any missing patterns
-        # Check if patterns exist, if not add them before the closing brace of files.exclude
-        if ! grep -q '"Dockerfile"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "Dockerfile": true,\n\1}/' "$SETTINGS_FILE"
-        fi
-        if ! grep -q '"docker-compose.yml"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "docker-compose.yml": true,\n\1}/' "$SETTINGS_FILE"
-        fi
-        if ! grep -q '"justfile"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "justfile": false,\n\1}/' "$SETTINGS_FILE"
-        fi
-        if ! grep -q '"build.zig"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "build.zig": false,\n\1}/' "$SETTINGS_FILE"
-        fi
-        if ! grep -q '"build.zig.zon"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "build.zig.zon": false,\n\1}/' "$SETTINGS_FILE"
-        fi
-        if ! grep -q '"version.txt"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "version.txt": true,\n\1}/' "$SETTINGS_FILE"
-        fi
-        if ! grep -q '".zig-cache"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    ".zig-cache": true,\n\1}/' "$SETTINGS_FILE"
-        fi
-        if ! grep -q '".dockerignore"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    ".dockerignore": true,\n\1}/' "$SETTINGS_FILE"
-        fi
-        if ! grep -q '"scripts"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "scripts": true,\n\1}/' "$SETTINGS_FILE"
-        fi
-        if ! grep -q '"CONTRIBUTING.md"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "CONTRIBUTING.md": true,\n\1}/' "$SETTINGS_FILE"
-        fi
-        if ! grep -q '"CHANGELOG.md"' "$SETTINGS_FILE"; then
-            sed -i.tmp '/"files.exclude": {/,/}/ s/\(.*\)}/    "CHANGELOG.md": true,\n\1}/' "$SETTINGS_FILE"
-        fi
+            # Add pattern if it doesn't exist
+            if ! grep -q "\"${pattern}\"" "$SETTINGS_FILE"; then
+                sed -i.tmp "/\"files.exclude\": {/,/}/ s/\(.*\)}/    \"${pattern}\": true,\n\1}/" "$SETTINGS_FILE"
+            fi
+        done
+
+        # Then, set files to keep visible to false
+        for pattern in "${SHOW_PATTERNS[@]}"; do
+            # Escape special regex characters for sed
+            escaped_pattern=$(echo "$pattern" | sed 's/\./\\./g')
+            sed -i.tmp "s/\"${escaped_pattern}\": [^,]*/\"${pattern}\": false/" "$SETTINGS_FILE"
+
+            # Add pattern if it doesn't exist
+            if ! grep -q "\"${pattern}\"" "$SETTINGS_FILE"; then
+                sed -i.tmp "/\"files.exclude\": {/,/}/ s/\(.*\)}/    \"${pattern}\": false,\n\1}/" "$SETTINGS_FILE"
+            fi
+        done
     else
-        # Show all files
-        sed -i.tmp '
-            /"files.exclude": {/,/}/ {
-                s/"\.devcontainer": true/"\.devcontainer": false/
-                s/"\.vscode": [^,]*/"\.vscode": false/
-                s/"\.github": [^,]*/"\.github": false/
-                s/"\.editorconfig": [^,]*/"\.editorconfig": false/
-                s/"\.gitignore": [^,]*/"\.gitignore": false/
-                s/"\.gitattributes": [^,]*/"\.gitattributes": false/
-                s/"\.releaserc\.json": [^,]*/"\.releaserc.json": false/
-                s/"\.nv": [^,]*/"\.nv": false/
-                s/"\.zig-cache": [^,]*/"\.zig-cache": false/
-                s/"\.dockerignore": [^,]*/"\.dockerignore": false/
-                s/"Dockerfile": [^,]*/"Dockerfile": false/
-                s/"docker-compose\.yml": [^,]*/"docker-compose.yml": false/
-                s/"justfile": [^,]*/"justfile": false/
-                s/"version\.txt": [^,]*/"version.txt": false/
-                s/"\.claude": [^,]*/"\.claude": false/
-                s/"scripts": [^,]*/"scripts": false/
-                s/"CONTRIBUTING\.md": [^,]*/"CONTRIBUTING.md": false/
-                s/"CHANGELOG\.md": [^,]*/"CHANGELOG.md": false/
-            }
-        ' "$SETTINGS_FILE"
+        # Show all files - set everything to false
+        for pattern in "${HIDE_PATTERNS[@]}" "${SHOW_PATTERNS[@]}"; do
+            # Escape special regex characters for sed
+            escaped_pattern=$(echo "$pattern" | sed 's/\./\\./g')
+            sed -i.tmp "s/\"${escaped_pattern}\": [^,]*/\"${pattern}\": false/" "$SETTINGS_FILE"
+        done
     fi
 
     # Remove temp file

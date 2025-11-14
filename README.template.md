@@ -31,7 +31,7 @@
 
 Run `just setup` or `./scripts/setup.sh` to install remaining dependencies (just, direnv, Zig).
 
-Optional: `just setup --dev` for development tools (ZLS language server), `just setup --template` for template testing.
+Optional: `just setup --dev` for development tools (ZLS language server, shellcheck, shfmt, etc.).
 
 ## Quick Start
 
