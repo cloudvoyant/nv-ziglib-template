@@ -448,6 +448,41 @@ EOF
     [ "$status" -eq 1 ]
 }
 
+@test "removes template test steps from workflows" {
+    bash ./scripts/scaffold.sh \
+        --src . \
+        --dest ../.. \
+        --non-interactive \
+        --project testproject
+
+    # CI workflow should exist
+    [ -f "$DEST_DIR/.github/workflows/ci.yml" ]
+
+    # Release workflow should exist
+    [ -f "$DEST_DIR/.github/workflows/release.yml" ]
+
+    # CI workflow should NOT contain template test step
+    run grep "Run template tests" "$DEST_DIR/.github/workflows/ci.yml"
+    [ "$status" -eq 1 ]
+
+    run grep "just test-template" "$DEST_DIR/.github/workflows/ci.yml"
+    [ "$status" -eq 1 ]
+
+    # Release workflow should NOT contain template test step
+    run grep "Run template tests" "$DEST_DIR/.github/workflows/release.yml"
+    [ "$status" -eq 1 ]
+
+    run grep "just test-template" "$DEST_DIR/.github/workflows/release.yml"
+    [ "$status" -eq 1 ]
+
+    # Both should still have regular test step
+    run grep "just test" "$DEST_DIR/.github/workflows/ci.yml"
+    [ "$status" -eq 0 ]
+
+    run grep "just test" "$DEST_DIR/.github/workflows/release.yml"
+    [ "$status" -eq 0 ]
+}
+
 @test "updates build.zig.zon version to 0.1.0" {
     bash ./scripts/scaffold.sh \
         --src . \

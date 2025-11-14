@@ -478,6 +478,23 @@ log_info "Cleaning template files..."
 rm -f "$DEST_DIR/CHANGELOG.md"
 rm -f "$DEST_DIR/RELEASE_NOTES.md"
 
+# Remove template test steps from CI workflows
+if [ -f "$DEST_DIR/.github/workflows/ci.yml" ]; then
+    awk '
+        /- name: Run template tests/,/just test-template/ { next }
+        { print }
+    ' "$DEST_DIR/.github/workflows/ci.yml" > "$DEST_DIR/.github/workflows/ci.yml.tmp" && \
+    mv "$DEST_DIR/.github/workflows/ci.yml.tmp" "$DEST_DIR/.github/workflows/ci.yml"
+fi
+
+if [ -f "$DEST_DIR/.github/workflows/release.yml" ]; then
+    awk '
+        /- name: Run template tests/,/just test-template/ { next }
+        { print }
+    ' "$DEST_DIR/.github/workflows/release.yml" > "$DEST_DIR/.github/workflows/release.yml.tmp" && \
+    mv "$DEST_DIR/.github/workflows/release.yml.tmp" "$DEST_DIR/.github/workflows/release.yml"
+fi
+
 # Remove template section from justfile
 JUSTFILE="$DEST_DIR/justfile"
 if [ -f "$JUSTFILE" ]; then

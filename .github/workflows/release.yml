@@ -71,6 +71,11 @@ jobs:
           source .envrc
           just test
 
+      - name: Run template tests
+        run: |
+          source .envrc
+          just test-template
+
       - name: Create new version
         id: upversion
         env:
