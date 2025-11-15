@@ -222,6 +222,9 @@ EOF
     # Original maintainer docs should NOT exist in scaffolded project
     [ ! -f "$DEST_DIR/docs/architecture.md" ]
     [ ! -f "$DEST_DIR/docs/user-guide.md" ]
+    [ ! -f "$DEST_DIR/docs/.gitkeep" ]
+    [ ! -d "$DEST_DIR/docs/decisions" ]
+    [ ! -d "$DEST_DIR/docs/migrations" ]
 
     # Template files should NOT exist (should be deleted after processing)
     [ ! -f "$DEST_DIR/docs/infrastructure.template.md" ]

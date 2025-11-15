@@ -463,6 +463,13 @@ log_info "Cleaning template files"
 rm -f "$DEST_DIR/CHANGELOG.md"
 rm -f "$DEST_DIR/RELEASE_NOTES.md"
 
+# Remove maintainer documentation files (important for GitHub template users)
+rm -f "$DEST_DIR/docs/architecture.md"
+rm -f "$DEST_DIR/docs/user-guide.md"
+rm -f "$DEST_DIR/docs/.gitkeep"
+rm -rf "$DEST_DIR/docs/decisions"
+rm -rf "$DEST_DIR/docs/migrations"
+
 # Remove template test steps from CI workflows
 if [ -f "$DEST_DIR/.github/workflows/ci.yml" ]; then
     awk '
