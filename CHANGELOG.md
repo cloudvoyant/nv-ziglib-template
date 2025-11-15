@@ -1,3 +1,23 @@
+## [1.10.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.9.1...v1.10.0) (2025-11-15)
+
+### Features
+
+* use template-based documentation scaffolding
+
+Replaces documentation file renaming with template processing using
+placeholder variables. Scaffolded projects now receive client-focused
+docs (infrastructure.md, development-guide.md) generated from templates
+while original maintainer docs (architecture.md, user-guide.md) remain
+in the template repo.
+
+Changes:
+- Add infrastructure.template.md and development-guide.template.md
+- Update scaffold.sh to process templates with variable substitution
+- Exclude maintainer docs from scaffolding via rsync
+- Preserve template name in processed docs by excluding from global replacement
+- Update tests to verify template processing workflow
+- Enhance changelog format to include commit bodies
+
 ## [1.9.1](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.9.0...v1.9.1) (2025-11-14)
 
 ### Bug Fixes
