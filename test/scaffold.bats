@@ -171,15 +171,19 @@ EOF
 }
 
 
-@test "removes platform-specific files from destination" {
+@test "removes platform-specific files from destination (nv CLI path)" {
+    # This test simulates the nv CLI workflow where:
+    # - Template is cloned to a separate directory (SRC_DIR)
+    # - scaffold.sh copies files from SRC_DIR to DEST_DIR
+    # - rsync --exclude filters prevent some files from being copied
     bash ./scripts/scaffold.sh \
         --src . \
         --dest ../.. \
         --non-interactive \
         --project testproject
 
-    # Template development files should be removed
-    [ ! -d "$DEST_DIR/test" ]
+    # Template development files should be removed/excluded
+    [ ! -d "$DEST_DIR/test" ]  # test/ excluded by rsync
     [ ! -f "$DEST_DIR/CHANGELOG.md" ]
     [ ! -f "$DEST_DIR/RELEASE_NOTES.md" ]
 
@@ -189,6 +193,42 @@ EOF
 
     # setup.sh should exist
     [ -f "$DEST_DIR/scripts/setup.sh" ]
+}
+
+@test "removes template BATS files in-place (GitHub template path)" {
+    # This test simulates the GitHub "Use this template" workflow where:
+    # - All files including test/*.bats are already in the project directory
+    # - User runs scaffold.sh in-place (src = dest = current directory)
+    # - scaffold.sh must actively delete template-specific files
+
+    # Copy all template files to DEST_DIR (simulating GitHub template clone)
+    rsync -a \
+        --exclude='.git' \
+        --exclude='.nv' \
+        "$ORIGINAL_DIR/" "$DEST_DIR/"
+
+    # Verify test files exist before scaffolding
+    [ -f "$DEST_DIR/test/scaffold.bats" ]
+    [ -f "$DEST_DIR/test/library-usage.bats" ]
+    [ -f "$DEST_DIR/test/template-export.bats" ]
+
+    # Run scaffold.sh in-place from DEST_DIR
+    cd "$DEST_DIR"
+    bash ./scripts/scaffold.sh \
+        --non-interactive \
+        --project testproject
+
+    # Test directory should still exist (useful for user tests)
+    [ -d "$DEST_DIR/test" ]
+
+    # But template BATS files should be removed
+    [ ! -f "$DEST_DIR/test/scaffold.bats" ]
+    [ ! -f "$DEST_DIR/test/library-usage.bats" ]
+    [ ! -f "$DEST_DIR/test/template-export.bats" ]
+
+    # Other template files should be removed
+    [ ! -f "$DEST_DIR/CHANGELOG.md" ]
+    [ ! -f "$DEST_DIR/RELEASE_NOTES.md" ]
 }
 
 @test "removes CHANGELOG.md and RELEASE_NOTES.md even if they exist before scaffolding" {

@@ -470,6 +470,9 @@ rm -f "$DEST_DIR/docs/.gitkeep"
 rm -rf "$DEST_DIR/docs/decisions"
 rm -rf "$DEST_DIR/docs/migrations"
 
+# Remove template-specific BATS test files (keep test/ directory for user tests)
+rm -f "$DEST_DIR/test"/*.bats
+
 # Remove template test steps from CI workflows
 if [ -f "$DEST_DIR/.github/workflows/ci.yml" ]; then
     awk '
