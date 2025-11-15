@@ -1,3 +1,20 @@
+## [1.10.1](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.10.0...v1.10.1) (2025-11-15)
+
+### Bug Fixes
+
+* actively delete maintainer docs during scaffolding
+
+Adds explicit deletion of maintainer documentation files (architecture.md,
+user-guide.md, .gitkeep, decisions/, migrations/) during scaffold cleanup.
+This ensures these files are removed even when users click GitHub's "Use
+this template" button, which doesn't respect .gitattributes export-ignore.
+
+The rsync excludes prevent copying these files when scaffolding from a
+clean source, but GitHub template users get all files initially, so we
+must actively delete them.
+
+Updated tests to verify all maintainer docs are removed after scaffolding.
+
 ## [1.10.0](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.9.1...v1.10.0) (2025-11-15)
 
 ### Features
