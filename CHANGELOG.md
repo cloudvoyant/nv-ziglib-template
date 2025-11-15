@@ -1,3 +1,13 @@
+## [1.10.2](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.10.1...v1.10.2) (2025-11-15)
+
+### Bug Fixes
+
+* remove template BATS files during scaffolding
+
+Ensures template test files (*.bats) are deleted when scaffolding
+projects created via GitHub's "Use this template" feature, where
+files can't be excluded via rsync and must be actively removed.
+
 ## [1.10.1](https://github.com/cloudvoyant/nv-ziglib-template/compare/v1.10.0...v1.10.1) (2025-11-15)
 
 ### Bug Fixes
