@@ -56,7 +56,7 @@ get_install_dir() {
 
 # Main installation
 main() {
-    echo "Installing ${BINARY_NAME}..."
+    echo "Installing ${BINARY_NAME}"
 
     # Detect platform
     local platform=$(detect_platform)

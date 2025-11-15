@@ -42,7 +42,7 @@ BACKUP_DIR=""
 cleanup_on_error() {
     local exit_code=$?
     if [ "$exit_code" -ne 0 ] && [ "$SCAFFOLD_STARTED" = true ]; then
-        log_error "Scaffolding failed. Restoring original directory..."
+        log_error "Scaffolding failed. Restoring original directory"
 
         if [ -n "$BACKUP_DIR" ] && [ -d "$BACKUP_DIR" ]; then
             # Ensure destination and all contents are writable for cleanup
@@ -173,7 +173,7 @@ words_to_flat() {
 DEFAULT_PROJECT=$(basename "$DEST_DIR")
 
 # GET TEMPLATE NAME AND VERSION -----------------------------------------------
-log_info "Detecting template name and version..."
+log_info "Detecting template name and version"
 
 # Use environment variables from sourced .envrc
 TEMPLATE_NAME="$PROJECT"
@@ -242,7 +242,7 @@ else
 fi
 
 # BACKUP DESTINATION DIRECTORY ------------------------------------------------
-log_info "Creating backup of destination directory..."
+log_info "Creating backup of destination directory"
 
 BACKUP_DIR="$DEST_DIR/.nv/.scaffold-backup"
 mkdir -p "$BACKUP_DIR"
@@ -258,7 +258,7 @@ SCAFFOLD_STARTED=true
 log_success "Backup created"
 
 # COPY PLATFORM FILES TO DESTINATION -------------------------------------------
-log_info "Copying platform files to destination..."
+log_info "Copying platform files to destination"
 
 # Copy all files from source to destination
 # Exclude: .git, .nv, test/, docs/migrations/, docs/decisions/, docs/architecture.md, docs/user-guide.md, docs/.gitkeep, CHANGELOG.md, RELEASE_NOTES.md
@@ -278,7 +278,7 @@ rsync -a \
 log_success "Platform files copied"
 
 # PROCESS DOCUMENTATION TEMPLATES ----------------------------------------------
-log_info "Creating documentation from templates..."
+log_info "Creating documentation from templates"
 
 # Process infrastructure.template.md
 if [ -f "$SRC_DIR/docs/infrastructure.template.md" ]; then
@@ -311,7 +311,7 @@ else
 fi
 
 # REPLACE TEMPLATE NAME WITH PROJECT NAME IN ALL VARIANTS ---------------------
-log_info "Replacing template name with project name..."
+log_info "Replacing template name with project name"
 
 # Generate all variants of template name and project name
 TEMPLATE_WORDS=$(string_to_words "$TEMPLATE_NAME")
@@ -356,7 +356,7 @@ done
 log_success "Replaced template name with project name"
 
 # UPDATE .ENVRC ----------------------------------------------------------------
-log_info "Configuring .envrc..."
+log_info "Configuring .envrc"
 
 ENVRC_TEMPLATE="$SRC_DIR/.envrc.template"
 ENVRC_FILE="$DEST_DIR/.envrc"
@@ -410,7 +410,7 @@ log_success "Created and configured .envrc from template"
 
 # UPDATE INSTALL.SH ------------------------------------------------------------
 if [ -f "$DEST_DIR/install.sh" ]; then
-    log_info "Configuring install.sh..."
+    log_info "Configuring install.sh"
 
     # Hardcode template repo (scaffolded projects should update this)
     GITHUB_REPO="cloudvoyant/nv-ziglib-template"
@@ -441,7 +441,7 @@ fi
 
 # CLEAN UP .CLAUDE/ DIRECTORY --------------------------------------------------
 if [ "$KEEP_CLAUDE" = false ]; then
-    log_info "Cleaning .claude/ directory..."
+    log_info "Cleaning .claude/ directory"
 
     # Remove instance-specific files
     rm -f "$DEST_DIR/.claude/plan.md"
@@ -457,7 +457,7 @@ else
 fi
 
 # CLEAN UP TEMPLATE FILES ------------------------------------------------------
-log_info "Cleaning template files..."
+log_info "Cleaning template files"
 
 # Remove template-specific files that shouldn't be in scaffolded projects
 rm -f "$DEST_DIR/CHANGELOG.md"
@@ -498,7 +498,7 @@ fi
 
 # Replace README.md with template
 if [ -f "$SRC_DIR/README.template.md" ]; then
-    log_info "Creating README from template..."
+    log_info "Creating README from template"
 
     # Copy template and substitute variables
     sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; \
@@ -517,14 +517,14 @@ fi
 log_success "Removed template development files"
 
 # REGENERATE ZIG FINGERPRINT ---------------------------------------------------
-log_info "Regenerating Zig package fingerprint..."
+log_info "Regenerating Zig package fingerprint"
 
 if command -v zig >/dev/null 2>&1; then
     # Temporarily disable exit on error for this section
     set +e
 
     # Run zig build --fetch to get the fingerprint error message
-    # The error message will contain: "use this value: 0x..."
+    # The error message will contain: "use this value: 0x"
     BUILD_OUTPUT=$(cd "$DEST_DIR" && zig build --fetch 2>&1)
     BUILD_EXIT_CODE=$?
 
