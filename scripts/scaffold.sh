@@ -261,38 +261,54 @@ log_success "Backup created"
 log_info "Copying platform files to destination..."
 
 # Copy all files from source to destination
-# Exclude: .git, .nv, test/, docs/migrations/, docs/decisions/, CHANGELOG.md, RELEASE_NOTES.md
+# Exclude: .git, .nv, test/, docs/migrations/, docs/decisions/, docs/architecture.md, docs/user-guide.md, docs/.gitkeep, CHANGELOG.md, RELEASE_NOTES.md
 rsync -a \
     --exclude='.git' \
     --exclude='.nv' \
     --exclude='test/' \
     --exclude='docs/migrations/' \
     --exclude='docs/decisions/' \
+    --exclude='docs/architecture.md' \
+    --exclude='docs/user-guide.md' \
+    --exclude='docs/.gitkeep' \
     --exclude='CHANGELOG.md' \
     --exclude='RELEASE_NOTES.md' \
     "$SRC_DIR/" "$DEST_DIR/"
 
 log_success "Platform files copied"
 
-# RENAME DOCUMENTATION FILES ---------------------------------------------------
-# Rename docs before template replacement, then update first paragraph after
-log_info "Renaming documentation files..."
+# PROCESS DOCUMENTATION TEMPLATES ----------------------------------------------
+log_info "Creating documentation from templates..."
 
-if [ -f "$DEST_DIR/docs/architecture.md" ]; then
-    # Update title
-    sed_inplace 's/^# Architecture$/# Infrastructure/' "$DEST_DIR/docs/architecture.md"
-    # Rename the file
-    mv "$DEST_DIR/docs/architecture.md" "$DEST_DIR/docs/infrastructure.md"
+# Process infrastructure.template.md
+if [ -f "$SRC_DIR/docs/infrastructure.template.md" ]; then
+    sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; \
+         s/{{TEMPLATE_NAME}}/$TEMPLATE_NAME/g; \
+         s/{{TEMPLATE_VERSION}}/$TEMPLATE_VERSION/g" \
+        "$SRC_DIR/docs/infrastructure.template.md" > "$DEST_DIR/docs/infrastructure.md"
+
+    # Remove template file after creating infrastructure.md
+    rm -f "$DEST_DIR/docs/infrastructure.template.md"
+
+    log_success "Created docs/infrastructure.md from template"
+else
+    log_warn "docs/infrastructure.template.md not found"
 fi
 
-if [ -f "$DEST_DIR/docs/user-guide.md" ]; then
-    # Update title
-    sed_inplace 's/^# User Guide$/# Development Guide/' "$DEST_DIR/docs/user-guide.md"
-    # Rename the file
-    mv "$DEST_DIR/docs/user-guide.md" "$DEST_DIR/docs/development-guide.md"
-fi
+# Process development-guide.template.md
+if [ -f "$SRC_DIR/docs/development-guide.template.md" ]; then
+    sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; \
+         s/{{TEMPLATE_NAME}}/$TEMPLATE_NAME/g; \
+         s/{{TEMPLATE_VERSION}}/$TEMPLATE_VERSION/g" \
+        "$SRC_DIR/docs/development-guide.template.md" > "$DEST_DIR/docs/development-guide.md"
 
-log_success "Documentation files renamed"
+    # Remove template file after creating development-guide.md
+    rm -f "$DEST_DIR/docs/development-guide.template.md"
+
+    log_success "Created docs/development-guide.md from template"
+else
+    log_warn "docs/development-guide.template.md not found"
+fi
 
 # REPLACE TEMPLATE NAME WITH PROJECT NAME IN ALL VARIANTS ---------------------
 log_info "Replacing template name with project name..."
@@ -315,7 +331,7 @@ PROJECT_PASCAL=$(words_to_pascal "$PROJECT_WORDS")
 PROJECT_CAMEL=$(words_to_camel "$PROJECT_WORDS")
 PROJECT_FLAT=$(words_to_flat "$PROJECT_WORDS")
 
-# Replace in all text files (excluding binary files, .git, and build artifacts)
+# Replace in all text files (excluding binary files, .git, build artifacts, and already-processed docs)
 find "$DEST_DIR" -type f \
     ! -path "*/.git/*" \
     ! -path "$DEST_DIR/.nv/*" \
@@ -323,6 +339,8 @@ find "$DEST_DIR" -type f \
     ! -path "*/zig-cache/*" \
     ! -path "*/zig-out/*" \
     ! -path "*/node_modules/*" \
+    ! -path "$DEST_DIR/docs/infrastructure.md" \
+    ! -path "$DEST_DIR/docs/development-guide.md" \
     2>/dev/null | while IFS= read -r file; do
     # Skip binary files (check for null bytes)
     if file "$file" | grep -q "text\|JSON\|empty"; then
@@ -336,39 +354,6 @@ find "$DEST_DIR" -type f \
 done
 
 log_success "Replaced template name with project name"
-
-# UPDATE DOCUMENTATION FIRST PARAGRAPH ----------------------------------------
-# After template replacement, update the first paragraph to reference the template
-log_info "Updating documentation references to template..."
-
-TEMPLATE_REPO_URL="https://github.com/cloudvoyant/nv-ziglib-template"
-
-if [ -f "$DEST_DIR/docs/infrastructure.md" ]; then
-    # Replace the first occurrence of the project description with a template reference
-    # Using awk to replace only the first occurrence (works cross-platform)
-    awk -v url="$TEMPLATE_REPO_URL" -v proj="$PROJECT_KEBAB" '
-        !done && /^`'"$PROJECT_KEBAB"'` is a production-ready/ {
-            sub(/^`'"$PROJECT_KEBAB"'` is a production-ready/, "This project is based on [nv-ziglib-template](" url "), a production-ready")
-            done=1
-        }
-        {print}
-    ' "$DEST_DIR/docs/infrastructure.md" > "$DEST_DIR/docs/infrastructure.md.tmp" && \
-    mv "$DEST_DIR/docs/infrastructure.md.tmp" "$DEST_DIR/docs/infrastructure.md"
-fi
-
-if [ -f "$DEST_DIR/docs/development-guide.md" ]; then
-    # Replace the first occurrence of the project description with a template reference
-    awk -v url="$TEMPLATE_REPO_URL" -v proj="$PROJECT_KEBAB" '
-        !done && /^`'"$PROJECT_KEBAB"'` is a production-ready/ {
-            sub(/^`'"$PROJECT_KEBAB"'` is a production-ready/, "This project is based on [nv-ziglib-template](" url "), a production-ready")
-            done=1
-        }
-        {print}
-    ' "$DEST_DIR/docs/development-guide.md" > "$DEST_DIR/docs/development-guide.md.tmp" && \
-    mv "$DEST_DIR/docs/development-guide.md.tmp" "$DEST_DIR/docs/development-guide.md"
-fi
-
-log_success "Documentation references updated"
 
 # UPDATE .ENVRC ----------------------------------------------------------------
 log_info "Configuring .envrc..."

@@ -212,34 +212,52 @@ EOF
     [ ! -f "$DEST_DIR/RELEASE_NOTES.md" ]
 }
 
-@test "renames documentation files during scaffolding" {
+@test "processes documentation templates during scaffolding" {
     bash ./scripts/scaffold.sh \
         --src . \
         --dest ../.. \
         --non-interactive \
         --project testproject
 
-    # Old filenames should not exist
+    # Original maintainer docs should NOT exist in scaffolded project
     [ ! -f "$DEST_DIR/docs/architecture.md" ]
     [ ! -f "$DEST_DIR/docs/user-guide.md" ]
 
-    # New filenames should exist
+    # Template files should NOT exist (should be deleted after processing)
+    [ ! -f "$DEST_DIR/docs/infrastructure.template.md" ]
+    [ ! -f "$DEST_DIR/docs/development-guide.template.md" ]
+
+    # Processed docs should exist
     [ -f "$DEST_DIR/docs/infrastructure.md" ]
     [ -f "$DEST_DIR/docs/development-guide.md" ]
 
-    # Titles should be updated
+    # Titles should be correct
     run grep "^# Infrastructure$" "$DEST_DIR/docs/infrastructure.md"
     [ "$status" -eq 0 ]
 
     run grep "^# Development Guide$" "$DEST_DIR/docs/development-guide.md"
     [ "$status" -eq 0 ]
 
-    # Intro paragraph should reference the template with link
-    run grep "This project is based on \[nv-ziglib-template\](https://github.com/cloudvoyant/nv-ziglib-template)" "$DEST_DIR/docs/infrastructure.md"
+    # Should contain project name (placeholder replaced)
+    run grep "testproject" "$DEST_DIR/docs/infrastructure.md"
     [ "$status" -eq 0 ]
 
-    run grep "This project is based on \[nv-ziglib-template\](https://github.com/cloudvoyant/nv-ziglib-template)" "$DEST_DIR/docs/development-guide.md"
+    run grep "testproject" "$DEST_DIR/docs/development-guide.md"
     [ "$status" -eq 0 ]
+
+    # Should contain template name reference
+    run grep "nv-ziglib-template" "$DEST_DIR/docs/infrastructure.md"
+    [ "$status" -eq 0 ]
+
+    run grep "nv-ziglib-template" "$DEST_DIR/docs/development-guide.md"
+    [ "$status" -eq 0 ]
+
+    # Should NOT contain placeholder variables
+    run grep "{{PROJECT_NAME}}" "$DEST_DIR/docs/infrastructure.md"
+    [ "$status" -eq 1 ]
+
+    run grep "{{PROJECT_NAME}}" "$DEST_DIR/docs/development-guide.md"
+    [ "$status" -eq 1 ]
 }
 
 @test "replaces README.md with template" {
